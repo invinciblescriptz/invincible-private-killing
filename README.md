@@ -7,14 +7,15 @@ local MainWindow = ScriptLibrary:AddWindow(string.format("Genesis Hub | Hello %s
 
 -- Simple Kill Aura (auto punch nearby players)
 getgenv().KillAuraEnabled = false
-getgenv().KillRange = 15       -- adjust distance
-getgenv().PunchDelay = 0.05    -- lower = faster (but can lag/kick risk)
+getgenv().KillRange = 15 -- adjust distance
+getgenv().PunchDelay = 0.05 -- lower = faster (but can lag/kick risk)
 
 local player = game.Players.LocalPlayer
 local mouse = player:GetMouse()
 
 local function getClosest()
-    local closest, dist = nil, KillRange
+    local closest = nil
+    local dist = getgenv().KillRange
     for _, plr in ipairs(game.Players:GetPlayers()) do
         if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
             local magnitude = (player.Character.HumanoidRootPart.Position - plr.Character.HumanoidRootPart.Position).Magnitude
@@ -29,9 +30,9 @@ end
 
 spawn(function()
     while true do
-        wait(PunchDelay)
-        if not KillAuraEnabled then continue end
-        
+        wait(getgenv().PunchDelay)
+        if not getgenv().KillAuraEnabled then continue end
+
         local target = getClosest()
         if target and target.Character and target.Character:FindFirstChild("Humanoid") and target.Character.Humanoid.Health > 0 then
             -- Most common remote in Muscle Legends for punch/attack
@@ -42,11 +43,11 @@ spawn(function()
 end)
 
 -- Add toggle button to your GUI
-local tab = window:AddTab("Combat")
+local tab = MainWindow:AddTab("Combat")
 tab:AddSwitch("Kill Aura", function(bool)
     getgenv().KillAuraEnabled = bool
 end)
 
-tab:AddSlider("Kill Range", 5, 50, 15, function(val)
+tab:AddSlider("Kill Range", 5, 50, getgenv().KillRange, function(val)
     getgenv().KillRange = val
 end)
