@@ -4,20 +4,25 @@ local LightingService = game:GetService("Lighting")
 local SoundService = game:GetService("SoundService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local VirtualUserService = game:GetService("VirtualUser")
 local LocalPlayer = PlayerService.LocalPlayer
 local CharacterModel = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 
 local ScriptLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X", true))()
-local MainWindow = ScriptLibrary:AddWindow(string.format("Genesis Hub | Hello %s", LocalPlayer.DisplayName), {
+local MainWindow = ScriptLibrary:AddWindow(string.format("Invincible 2.0 | Hello %s", LocalPlayer.DisplayName), {
     min_size = Vector2.new(680, 870),
     can_resize = true,
     main_color = Color3.fromRGB(0, 0, 0)
 })
 
+-- Tabs
 local MainTab = MainWindow:AddTab("Main")
 local FarmTab = MainWindow:AddTab("Farm Op")
+local KillTab = MainWindow:AddTab("Kill")
+local TeleportTab = MainWindow:AddTab("Teleport")
+local MusicTab = MainWindow:AddTab("Music")
+local CreditsTab = MainWindow:AddTab("Credits")
 
+-- Global variables
 _G.InfiniteJump = false
 _G.AutoSpinWheel = false
 _G.AutoRepFarmEnabled = false
@@ -27,7 +32,18 @@ local LockPosition = false
 local ShowPets = false
 local ShowOtherPets = false
 local WalkOnWater = false
+local MusicUrl = ""
+local CurrentSound = nil
+_G.autoGoodKarma = false
+_G.autoBadKarma = false
+_G.fastHitActive = false
+_G.whitelistedPlayers = _G.whitelistedPlayers or {}
+_G.viewPlayer = false
+_G.ViewTarget = ""
+_G.autoWhitelistFriends = false
+_G.selectedPet = ""
 
+-- Main Tab - Settings
 MainTab:AddLabel("Important:").TextSize = 22
 
 local AntiFlingSwitch = MainTab:AddSwitch("Anti Fling", function(SwitchState)
@@ -37,12 +53,6 @@ AntiFlingSwitch:Set(true)
 
 local LockPositionSwitch = MainTab:AddSwitch("Lock Position", function(SwitchState)
     LockPosition = SwitchState
-    if SwitchState then
-        RunService.Heartbeat:Connect(function()
-            if LockPosition and CharacterModel and CharacterModel:FindFirstChild("HumanoidRootPart") then
-            end
-        end)
-    end
 end)
 LockPositionSwitch:Set(false)
 
@@ -89,13 +99,14 @@ TimeDropdown:Add("Night")
 TimeDropdown:Add("Day")
 TimeDropdown:Add("Midnight")
 
+-- Farm Op Tab
 local StrengthSwitch = FarmTab:AddSwitch("Strength Op", function(SwitchState)
     _G.AutoRepFarmEnabled = SwitchState
     warn("[Auto Rep Farm] Estado cambiado a:", SwitchState and "ON" or "OFF")
 end)
 StrengthSwitch:Set(false)
 
-local AutoEatSwitch = FarmTab:AddSwitch("Auto Eat Egg 30 Minuts", function(SwitchState)
+local AutoEatSwitch = FarmTab:AddSwitch("Auto Eat Egg 30 Minutes", function(SwitchState)
     AutoEatEgg = SwitchState
     task.spawn(function()
         while AutoEatEgg do
@@ -103,9 +114,10 @@ local AutoEatSwitch = FarmTab:AddSwitch("Auto Eat Egg 30 Minuts", function(Switc
             if Backpack then
                 local EggItem = Backpack:FindFirstChild("Protein Egg")
                 if EggItem then
+                    -- Add logic if needed
                 end
             end
-            task.wait(1800)
+            task.wait(1800) -- Wait 30 minutes
         end
     end)
 end)
@@ -116,6 +128,7 @@ local SpinWheelSwitch = FarmTab:AddSwitch("Spin Fortune Wheel", function(SwitchS
     if SwitchState then
         task.spawn(function()
             while _G.AutoSpinWheel do
+                -- Add spin wheel logic here
                 task.wait(0.1)
             end
         end)
@@ -124,10 +137,11 @@ end)
 SpinWheelSwitch:Set(false)
 
 FarmTab:AddSwitch("Hide All Frames", function(SwitchState)
+    -- Implement hide all frames if needed
 end)
 
 FarmTab:AddButton("Anti Lag", function()
-    for LoopIndex, DescendantObject in pairs(workspace:GetDescendants()) do
+    for _, DescendantObject in pairs(workspace:GetDescendants()) do
         if DescendantObject:IsA("ParticleEmitter") then
             DescendantObject.Enabled = false
         end
@@ -136,12 +150,12 @@ FarmTab:AddButton("Anti Lag", function()
     LightingService.FogEnd = 9e9
     LightingService.Brightness = 0
     settings().Rendering.QualityLevel = 1
-    for LoopIndex, DecalObject in pairs(workspace:GetDescendants()) do
+    for _, DecalObject in pairs(workspace:GetDescendants()) do
         if DecalObject:IsA("Decal") then
             DecalObject.Transparency = 1
         end
     end
-    for LoopIndex, EffectObject in pairs(LightingService:GetChildren()) do
+    for _, EffectObject in pairs(LightingService:GetChildren()) do
         if EffectObject:IsA("BlurEffect") then
             EffectObject.Enabled = false
         end
@@ -154,17 +168,17 @@ FarmTab:AddButton("Anti Lag", function()
 end)
 
 FarmTab:AddButton("Full Optimization", function()
-    for LoopIndex, GuiObject in pairs(LocalPlayer:WaitForChild("PlayerGui"):GetChildren()) do
+    for _, GuiObject in pairs(LocalPlayer:WaitForChild("PlayerGui"):GetChildren()) do
         if GuiObject:IsA("ScreenGui") then
             GuiObject:Destroy()
         end
     end
-    for LoopIndex, ObjectInstance in pairs(workspace:GetDescendants()) do
+    for _, ObjectInstance in pairs(workspace:GetDescendants()) do
         if ObjectInstance:IsA("ParticleEmitter") or ObjectInstance:IsA("PointLight") then
             ObjectInstance:Destroy()
         end
     end
-    for IteratorValue, Skybox in pairs(LightingService:GetChildren()) do
+    for _, Skybox in pairs(LightingService:GetChildren()) do
         if Skybox:IsA("Sky") then
             Skybox:Destroy()
         end
@@ -180,16 +194,17 @@ FarmTab:AddButton("Full Optimization", function()
     DarkSkybox.Parent = LightingService
     LightingService.Brightness = 0
     LightingService.ClockTime = 0
-    LightingService.OutdoorAmbient = Color3.new(0,0,0)
-    LightingService.Ambient = Color3.new(0,0,0)
-    LightingService.FogColor = Color3.new(0,0,0)
+    LightingService.OutdoorAmbient = Color3.new(0, 0, 0)
+    LightingService.Ambient = Color3.new(0, 0, 0)
+    LightingService.FogColor = Color3.new(0, 0, 0)
     LightingService.FogEnd = 100
 end)
 
 FarmTab:AddButton("Equip Swift Samurai", function()
-    print("BotÃ³n presionado: equipando 8 Swift Samurai")
+    print("Botón presionado: equipando 8 Swift Samurai")
     local PetsContainer = LocalPlayer:FindFirstChild("petsFolder")
     if PetsContainer then
+        -- Add logic to equip pets if needed
     end
 end)
 
@@ -205,12 +220,13 @@ FarmTab:AddButton("Jungle lift", function()
     end
 end)
 
-FarmTab:AddLabel("Rebirths Gained").TextSize = 23
-local RebirthsFunctions = FarmTab:AddFolder("Fast Rebirths Functions")
-RebirthsFunctions:AddLabel("0d 0h 0m 0s").TextSize = 18
-RebirthsFunctions:AddLabel("Rebirths: 0").TextSize = 18
-RebirthsFunctions:AddLabel("Rebirths Gained: 0").TextSize = 18
+-- Rebirths info
+local RebirthsFolder = FarmTab:AddFolder("Fast Rebirths Functions")
+RebirthsFolder:AddLabel("0d 0h 0m 0s").TextSize = 18
+RebirthsFolder:AddLabel("Rebirths: 0").TextSize = 18
+RebirthsFolder:AddLabel("Rebirths Gained: 0").TextSize = 18
 
+-- Rebirths tracking
 task.spawn(function()
     while true do
         pcall(function()
@@ -218,6 +234,7 @@ task.spawn(function()
             if LeaderboardStats then
                 local RebirthCount = LeaderboardStats:FindFirstChild("Rebirths")
                 if RebirthCount then
+                    -- Update display if needed
                 end
             end
         end)
@@ -225,56 +242,30 @@ task.spawn(function()
     end
 end)
 
+-- Create ground base parts
 task.spawn(function()
     local BasePosition = Vector3.new(-2, -9.5, -2)
     local BlockSize = Vector3.new(2048, 1, 2048)
-    for XCoordinate = -5, 5 do
-        for ZCoordinate = -5, 5 do
-            local CalculatedPosition = BasePosition + Vector3.new(XCoordinate * 2048, 0, ZCoordinate * 2048)
-            local BasePart = Instance.new("Part")
-            BasePart.Size = BlockSize
-            BasePart.Position = CalculatedPosition
-            BasePart.Anchored = true
-            BasePart.Transparency = 1
-            BasePart.CanCollide = true
-            BasePart.Name = string.format("FloorPart_%d_%d", XCoordinate, ZCoordinate)
-            BasePart.Parent = workspace
+    for X = -5, 5 do
+        for Z = -5, 5 do
+            local Position = BasePosition + Vector3.new(X * 2048, 0, Z * 2048)
+            local Part = Instance.new("Part")
+            Part.Size = BlockSize
+            Part.Position = Position
+            Part.Anchored = true
+            Part.Transparency = 1
+            Part.CanCollide = true
+            Part.Name = string.format("FloorPart_%d_%d", X, Z)
+            Part.Parent = workspace
         end
     end
+end)
 
-local PlayerService = game:GetService("Players")
-local ReplicatedStorageService = game:GetService("ReplicatedStorage")
-local LightingService = game:GetService("Lighting")
-local SoundService = game:GetService("SoundService")
-local LocalPlayer = PlayerService.LocalPlayer
-local CharacterModel = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-
-local ScriptLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X", true))()
-local MainWindow = ScriptLibrary:AddWindow(string.format("Genesis Hub | Hello %s", LocalPlayer.DisplayName), {
-    ["min_size"] = Vector2.new(400, 870),
-    ["can_resize"] = true,
-    ["main_color"] = Color3.fromRGB(0, 0, 0)
-})
-
-local KillTab = MainWindow:AddTab("Kill")
-local TeleportTab = MainWindow:AddTab("Teleport")
-local MusicTab = MainWindow:AddTab("Music")
-local CreditsTab = MainWindow:AddTab("Credits")
-
-_G.autoGoodKarma = false
-_G.autoBadKarma = false
-_G.fastHitActive = false
-_G.whitelistedPlayers = _G.whitelistedPlayers or {}
-_G.viewPlayer = false
-_G.ViewTarget = ""
-_G.autoWhitelistFriends = false
-_G.selectedPet = ""
-
+-- Kill Tab - Player control
 local function UpdatePlayerLists()
     WhitelistDropdown:Clear()
     ViewDropdown:Clear()
-
-    for Index, Player in ipairs(PlayerService:GetPlayers()) do
+    for _, Player in ipairs(PlayerService:GetPlayers()) do
         if Player ~= LocalPlayer then
             WhitelistDropdown:Add(Player.DisplayName)
             ViewDropdown:Add(Player.DisplayName)
@@ -287,13 +278,11 @@ PlayerService.PlayerRemoving:Connect(UpdatePlayerLists)
 task.wait(1)
 UpdatePlayerLists()
 
-KillTab:AddLabel("Select damage or durability pet")
-
-local PetSelector = KillTab:AddDropdown("Select Pet", function(Value)
+local PetDropdown = KillTab:AddDropdown("Select Pet", function(Value)
     _G.selectedPet = Value
 end)
-PetSelector:Add("Wild Wizard")
-PetSelector:Add("Mighty Monster")
+PetDropdown:Add("Wild Wizard")
+PetDropdown:Add("Mighty Monster")
 
 local AutoGoodKarmaSwitch = KillTab:AddSwitch("Auto Good Karma", function(BooleanValue)
     _G.autoGoodKarma = BooleanValue
@@ -320,7 +309,7 @@ local AutoWhitelistSwitch = KillTab:AddSwitch("Auto Whitelist Friends", function
     task.spawn(function()
         while _G.autoWhitelistFriends do
             pcall(function()
-                for Index, Player in ipairs(PlayerService:GetPlayers()) do
+                for _, Player in ipairs(PlayerService:GetPlayers()) do
                     if Player ~= LocalPlayer and LocalPlayer:IsFriendsWith(Player.UserId) then
                         if not table.find(_G.whitelistedPlayers, Player.Name) then
                             table.insert(_G.whitelistedPlayers, Player.Name)
@@ -335,7 +324,7 @@ end)
 AutoWhitelistSwitch:Set(false)
 
 local WhitelistDropdown = KillTab:AddDropdown("Add to Whitelist", function(DisplayName)
-    for Index, Player in ipairs(PlayerService:GetPlayers()) do
+    for _, Player in ipairs(PlayerService:GetPlayers()) do
         if Player.DisplayName == DisplayName then
             if not table.find(_G.whitelistedPlayers, Player.Name) then
                 table.insert(_G.whitelistedPlayers, Player.Name)
@@ -370,7 +359,7 @@ KillTab:AddButton("Remove Punch Anim", function()
     if Character and Character:FindFirstChild("Humanoid") then
         local Animator = Character.Humanoid:FindFirstChild("Animator")
         if Animator then
-            for Index, Track in pairs(Animator:GetPlayingAnimationTracks()) do
+            for _, Track in pairs(Animator:GetPlayingAnimationTracks()) do
                 if Track.Animation.AnimationId == "rbxassetid://3638729053" or Track.Animation.AnimationId == "rbxassetid://3638767427" then
                     Track:Stop()
                     Track:Destroy()
@@ -390,7 +379,7 @@ local ViewPlayerSwitch = KillTab:AddSwitch("View Player", function(BooleanValue)
         while _G.viewPlayer do
             pcall(function()
                 local Target = nil
-                for Index, Player in pairs(PlayerService:GetPlayers()) do
+                for _, Player in pairs(PlayerService:GetPlayers()) do
                     if Player.DisplayName == _G.ViewTarget then
                         Target = Player
                         break
@@ -410,6 +399,7 @@ local ViewPlayerSwitch = KillTab:AddSwitch("View Player", function(BooleanValue)
 end)
 ViewPlayerSwitch:Set(false)
 
+-- Size Buttons
 KillTab:AddButton("Size 30", function()
     local Arguments = { [1] = "changeSize", [2] = 30 }
     ReplicatedStorageService:WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer(unpack(Arguments))
@@ -420,11 +410,8 @@ KillTab:AddButton("Size 2", function()
     ReplicatedStorageService:WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer(unpack(Arguments))
 end)
 
-local TimeDropdown = KillTab:AddDropdown("Change Time", function(Value)
-    LightingService.Brightness = 2
-    LightingService.FogEnd = 100000
-    LightingService.Ambient = Color3.fromRGB(127, 127, 127)
-
+-- Change Time Dropdown
+local TimeDropdown2 = KillTab:AddDropdown("Change Time", function(Value)
     if Value == "Midnight" then LightingService.ClockTime = 0
     elseif Value == "Morning" then LightingService.ClockTime = 8
     elseif Value == "Noon" then LightingService.ClockTime = 12
@@ -435,12 +422,11 @@ local TimeDropdown = KillTab:AddDropdown("Change Time", function(Value)
     elseif Value == "Early Morning" then LightingService.ClockTime = 5
     end
 end)
-local Times = {"Morning", "Noon", "Afternoon", "Sunset", "Night", "Midnight", "Dawn", "Early Morning"}
-for Index, LoopVariable in ipairs(Times) do TimeDropdown:Add(LoopVariable) end
+local Times2 = {"Morning", "Noon", "Afternoon", "Sunset", "Night", "Midnight", "Dawn", "Early Morning"}
+for _, TimeOption in ipairs(Times2) do TimeDropdown2:Add(TimeOption) end
 
-KillTab:AddLabel("Blacklist System")
+-- Blacklist System
 local BlacklistFileName = "GenesisBlacklist_" .. LocalPlayer.Name .. ".txt"
-
 if not isfile(BlacklistFileName) then
     writefile(BlacklistFileName, "")
 end
@@ -450,21 +436,12 @@ KillTab:AddTextBox("Add to Blacklist", function(TextParameter)
     appendfile(BlacklistFileName, "," .. TextParameter)
 end, {["placeholder"] = "Ex: User1, User2"})
 
-MusicTab:AddLabel("â±ï¸ 00:00 / 00:00")
-
-local MusicUrl = ""
-MusicTab:AddTextBox("MP3 URL", function(ValueParameter)
-    MusicUrl = ValueParameter
-end, {["clear"] = false})
-
-local CurrentSound = nil
-MusicTab:AddButton("Play", function()
+-- Music Tab
+local function PlayMusic()
     if MusicUrl ~= "" then
         local MusicFileName = "GenesisMusic_1.mp3"
         writefile(MusicFileName, game:HttpGet(MusicUrl))
-
         if CurrentSound then CurrentSound:Destroy() end
-
         CurrentSound = Instance.new("Sound")
         CurrentSound.Name = "GenesisMP3Sound"
         CurrentSound.Parent = SoundService
@@ -473,7 +450,14 @@ MusicTab:AddButton("Play", function()
         CurrentSound.Looped = false
         CurrentSound:Play()
     end
-end)
+end
+
+MusicTab:AddLabel("🎵 00:00 / 00:00")
+MusicTab:AddTextBox("MP3 URL", function(ValueParameter)
+    MusicUrl = ValueParameter
+end, {["clear"] = false})
+
+MusicTab:AddButton("Play", PlayMusic)
 
 MusicTab:AddButton("Stop", function()
     if CurrentSound then CurrentSound:Stop() end
@@ -486,44 +470,63 @@ MusicTab:AddTextBox("Volume (0-5)", function(ParameterValue)
     end
 end, {["clear"] = false})
 
+-- Teleport Tab
 TeleportTab:AddButton("Spawn", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2, 8, 115)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2, 8, 115)
+    end
 end)
 
 TeleportTab:AddButton("Secret Area", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(1947, 2, 6191)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(1947, 2, 6191)
+    end
 end)
 
 TeleportTab:AddButton("Tiny Island", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-34, 7, 1903)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-34, 7, 1903)
+    end
 end)
 
 TeleportTab:AddButton("Frozen Island", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-2600, 3.6, -403)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-2600, 3.6, -403)
+    end
 end)
 
 TeleportTab:AddButton("Mythical Island", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2255, 7, 1071)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(2255, 7, 1071)
+    end
 end)
 
 TeleportTab:AddButton("Hell Island", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-6768, 7, -1287)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-6768, 7, -1287)
+    end
 end)
 
 TeleportTab:AddButton("Legend Island", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(4604, 991, -3887)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(4604, 991, -3887)
+    end
 end)
 
 TeleportTab:AddButton("Muscle King Island", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-8646, 17, -5738)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-8646, 17, -5738)
+    end
 end)
 
 TeleportTab:AddButton("Jungle Island", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-8659, 6, 2384)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-8659, 6, 2384)
+    end
 end)
 
 TeleportTab:AddButton("Brawl Lava", function()
-    LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(4471, 119, -8836)
+    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(4471, 119, -8836)
+    end
 end)
-
-CreditsTab:AddLabel("Script Made by: Invincible")
