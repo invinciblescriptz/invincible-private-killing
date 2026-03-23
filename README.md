@@ -1,14 +1,22 @@
 local ScriptLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X", true))()
-local MainWindow = ScriptLibrary:AddWindow(string.format("invincible private killing || Hello %s", LocalPlayer.DisplayName), {
+local MainWindow = ScriptLibrary:AddWindow(string.format("invincible private killing || Hello %s", game.Players.LocalPlayer.DisplayName), {
     ["min_size"] = Vector2.new(400, 870),
     ["can_resize"] = true,
     ["main_color"] = Color3.fromRGB(255, 192, 203) -- Pink color
 })
 
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+local window = MainWindow -- Adjusted for consistency
+
 local KillerTab = window:AddTab("Killer") -- Create the tab for killer features
 
--- Add features to "Kill" tab
-local Kill = KillerTab
+-- Variables to hold toggle states
+local AutoGoodKarma, AutoBadKarma, autoKill, spying, killTargetActive
+local SelectedTarget = nil
+local playerWhitelist = {}
+local ViewTargetName = nil
 
 -- Auto Good Karma
 Kill:AddSwitch("Auto Good Karma", function(state)
@@ -20,12 +28,12 @@ Kill:AddSwitch("Auto Good Karma", function(state)
             local leftHand = char and char:FindFirstChild("LeftHand")
             if char and rightHand and leftHand then
                 for _, target in ipairs(Players:GetPlayers()) do
-                    if target ~= LP then
-                        local evilKarma = target:FindFirstChild("evilKarma")
-                        local goodKarma = target:FindFirstChild("goodKarma")
+                    if target ~= LP and target.Character then
+                        local evilKarma = target.Character:FindFirstChild("evilKarma")
+                        local goodKarma = target.Character:FindFirstChild("goodKarma")
                         if evilKarma and goodKarma and evilKarma:IsA("IntValue") and goodKarma:IsA("IntValue") then
                             if evilKarma.Value > goodKarma.Value then
-                                local rootPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                                local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
                                 if rootPart then
                                     firetouchinterest(rightHand, rootPart, 1)
                                     firetouchinterest(leftHand, rootPart, 1)
@@ -52,12 +60,12 @@ Kill:AddSwitch("Auto Bad Karma", function(state)
             local leftHand = char and char:FindFirstChild("LeftHand")
             if char and rightHand and leftHand then
                 for _, target in ipairs(Players:GetPlayers()) do
-                    if target ~= LP then
-                        local evilKarma = target:FindFirstChild("evilKarma")
-                        local goodKarma = target:FindFirstChild("goodKarma")
+                    if target ~= LP and target.Character then
+                        local evilKarma = target.Character:FindFirstChild("evilKarma")
+                        local goodKarma = target.Character:FindFirstChild("goodKarma")
                         if evilKarma and goodKarma and evilKarma:IsA("IntValue") and goodKarma:IsA("IntValue") then
                             if goodKarma.Value > evilKarma.Value then
-                                local rootPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+                                local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
                                 if rootPart then
                                     firetouchinterest(rightHand, rootPart, 1)
                                     firetouchinterest(leftHand, rootPart, 1)
@@ -75,7 +83,6 @@ Kill:AddSwitch("Auto Bad Karma", function(state)
 end)
 
 -- Auto Whitelist friends
-local playerWhitelist = {}
 Kill:AddSwitch("Auto Whitelist Friends", function(state)
     if state then
         for _, player in ipairs(Players:GetPlayers()) do
@@ -109,24 +116,23 @@ Kill:AddTextBox("UnWhitelist", function(text)
     end
 end)
 
-local autoKill = false
+-- Auto Kill
 Kill:AddSwitch("Auto Kill", function(state)
     autoKill = state
     task.spawn(function()
         while autoKill do
             local char = LP.Character or LP.CharacterAdded:Wait()
-            local rightHand = char and char:FindFirstChild("RightHand")
-            local leftHand = char and char:FindFirstChild("LeftHand")
+            local rightHand = char:FindFirstChild("RightHand")
+            local leftHand = char:FindFirstChild("LeftHand")
             local punch = LP.Backpack:FindFirstChild("Punch")
             if punch and not char:FindFirstChild("Punch") then
                 punch.Parent = char
             end
             if rightHand and leftHand then
                 for _, target in ipairs(Players:GetPlayers()) do
-                    if target ~= LP and not playerWhitelist[target.Name] then
-                        local targetChar = target.Character
-                        local rootPart = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-                        local humanoid = targetChar and targetChar:FindFirstChild("Humanoid")
+                    if target ~= LP and not playerWhitelist[target.Name] and target.Character then
+                        local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
+                        local humanoid = target.Character:FindFirstChild("Humanoid")
                         if rootPart and humanoid and humanoid.Health > 0 then
                             pcall(function()
                                 firetouchinterest(rightHand, rootPart, 1)
@@ -145,37 +151,38 @@ end)
 
 -- Target dropdown for specific target
 local targetPlayerNames = {}
+local SelectedTarget = nil
+
+local function updateTargetDropdown()
+    local options = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LP then
+            table.insert(options, player.DisplayName)
+        end
+    end
+    -- Clear and rebuild dropdown
+    if targetDropdown then
+        targetDropdown:Clear()
+        for _, name in ipairs(options) do
+            targetDropdown:Add(name)
+        end
+    end
+end
+
 local targetDropdown = Kill:AddDropdown("Select Target", function(displayName)
     for _, player in ipairs(Players:GetPlayers()) do
         if player.DisplayName == displayName then
-            if not table.find(targetPlayerNames, player.Name) then
-                table.insert(targetPlayerNames, player.Name)
-            end
-            -- Save as selected target
             SelectedTarget = player.Name
             break
         end
     end
 end)
 
-local function updateTargetDropdown()
-    local options = {}
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LP then
-            options[#options + 1] = player.DisplayName
-        end
-    end
-    targetDropdown:Clear()
-    for _, name in ipairs(options) do
-        targetDropdown:Add(name)
-    end
-end
-
--- Refresh player list dynamically
 Players.PlayerAdded:Connect(function()
     updateTargetDropdown()
 end)
-Players.PlayerRemoving:Connect(function()
+
+Players.PlayerRemoving:Connect(function(player)
     updateTargetDropdown()
     -- Remove from target list if present
     for i = #targetPlayerNames, 1, -1 do
@@ -185,14 +192,14 @@ Players.PlayerRemoving:Connect(function()
     end
 end)
 
-local killTargetActive = false
+-- Start kill target toggle
 Kill:AddSwitch("Start Kill Target", function(state)
     killTargetActive = state
     task.spawn(function()
         while killTargetActive do
             local char = LP.Character or LP.CharacterAdded:Wait()
-            local rightHand = char and char:FindFirstChild("RightHand")
-            local leftHand = char and char:FindFirstChild("LeftHand")
+            local rightHand = char:FindFirstChild("RightHand")
+            local leftHand = char:FindFirstChild("LeftHand")
             local punch = LP.Backpack:FindFirstChild("Punch")
             if punch and not char:FindFirstChild("Punch") then
                 punch.Parent = char
@@ -200,7 +207,7 @@ Kill:AddSwitch("Start Kill Target", function(state)
             if rightHand and leftHand then
                 for _, name in ipairs(targetPlayerNames) do
                     local target = Players:FindFirstChild(name)
-                    if target and target ~= LP and target.Character then
+                    if target and target.Character then
                         local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
                         if rootPart then
                             pcall(function()
@@ -220,41 +227,26 @@ end)
 
 -- View and follow other players
 local ViewDropdownItems = {}
-local ViewTargetName = nil
 local spying = false
 
 local viewDropdown = Kill:AddDropdown("Select View Target", function(value)
     ViewTargetName = value
 end)
 
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LP then
-        viewDropdown:Add(player.DisplayName)
-        ViewDropdownItems[player.Name] = player.DisplayName
+local function refreshViewDropdown()
+    viewDropdown:Clear()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LP then
+            viewDropdown:Add(player.DisplayName)
+            ViewDropdownItems[player.Name] = player.DisplayName
+        end
     end
 end
 
-Players.PlayerAdded:Connect(function(player)
-    if player ~= LP then
-        viewDropdown:Add(player.DisplayName)
-        ViewDropdownItems[player.Name] = player.DisplayName
-    end
-end)
+refreshViewDropdown()
 
-Players.PlayerRemoving:Connect(function(player)
-    if player ~= LP then
-        ViewDropdownItems[player.Name] = nil
-        -- Rebuild dropdown
-        local options = {}
-        for _, display in pairs(ViewDropdownItems) do
-            options[#options + 1] = display
-        end
-        viewDropdown:Clear()
-        for _, displayName in ipairs(options) do
-            viewDropdown:Add(displayName)
-        end
-    end
-end)
+Players.PlayerAdded:Connect(refreshViewDropdown)
+Players.PlayerRemoving:Connect(refreshViewDropdown)
 
 -- Follow selected player
 local function followPlayer(target)
@@ -270,20 +262,18 @@ local function followPlayer(target)
 end
 
 local following = false
-local followTarget = nil
 
 Kill:AddSwitch("View Player", function(state)
     spying = state
     if not spying then
-        local cam = workspace.CurrentCamera
-        cam.CameraSubject = LP.Character and LP.Character:FindFirstChild("Humanoid") or LP
+        workspace.CurrentCamera.CameraSubject = LP.Character and LP.Character:FindFirstChild("Humanoid") or LP
         return
     end
     task.spawn(function()
         while spying do
             local target = Players:FindFirstChild(ViewTargetName)
-            if target and target ~= LP then
-                local humanoid = target.Character and target.Character:FindFirstChild("Humanoid")
+            if target and target ~= LP and target.Character then
+                local humanoid = target.Character:FindFirstChild("Humanoid")
                 if humanoid then
                     workspace.CurrentCamera.CameraSubject = humanoid
                 end
@@ -296,6 +286,7 @@ end)
 -- Button to stop following
 Kill:AddButton("Stop Following", function()
     spying = false
+    workspace.CurrentCamera.CameraSubject = LP.Character and LP.Character:FindFirstChild("Humanoid") or LP
     print("Stopped following")
 end)
 
