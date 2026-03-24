@@ -1,5 +1,4 @@
--- Place this as a LocalScript inside StarterPlayer > StarterPlayerScripts
-
+-- Full feature-rich GUI with draggable functionality
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "MyFeatureUI"
@@ -20,6 +19,7 @@ title.TextSize = 20
 
 local yOffset = 60
 
+-- Helper functions to create buttons and inputs
 local function createButton(text, yPos)
     local btn = Instance.new("TextButton", frame)
     btn.Size = UDim2.new(0, 300, 0, 40)
@@ -41,7 +41,7 @@ local function createInput(placeholder, yPos)
     return input
 end
 
--- Create buttons and input fields
+-- Creating UI elements
 local punchToggle = createButton("Auto Punch (Fast): OFF", yOffset)
 local killToggle = createButton("Auto Kill: OFF", yOffset + 50)
 local goodKarmaToggle = createButton("Auto Good Karma: OFF", yOffset + 100)
@@ -63,8 +63,10 @@ local whitelist = {}
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
--- Helper function to get HRP
+-- Helper function to get HumanoidRootPart
 local function getHRP(character)
     if character then
         return character:FindFirstChild("HumanoidRootPart")
@@ -72,7 +74,7 @@ local function getHRP(character)
     return nil
 end
 
--- Button click handlers
+-- Button handlers
 punchToggle.MouseButton1Click:Connect(function()
     autoPunch = not autoPunch
     punchToggle.Text = "Auto Punch (Fast): " .. (autoPunch and "ON" or "OFF")
@@ -127,11 +129,10 @@ stopFollowBtn.MouseButton1Click:Connect(function()
     print("Stopped following")
 end)
 
--- Main loop
+-- Main feature loop
 spawn(function()
     while true do
         wait(0.05)
-
         -- Auto Punch
         if autoPunch and _G.NexusRunning then
             pcall(function()
@@ -153,7 +154,6 @@ spawn(function()
                 end
             end)
         end
-
         -- Auto Kill
         if autoKill then
             local myChar = LP.Character
@@ -185,8 +185,7 @@ spawn(function()
                 end
             end
         end
-
-        -- Follow target
+        -- Follow Player
         if spying and targetPlayerName then
             local target = Players:FindFirstChild(targetPlayerName)
             if target and target.Character then
@@ -198,7 +197,6 @@ spawn(function()
                 end
             end
         end
-
         -- Auto Karma (Good)
         if autoGoodKarma then
             for _, target in pairs(Players:GetPlayers()) do
@@ -221,7 +219,6 @@ spawn(function()
                 end
             end
         end
-
         -- Auto Karma (Bad)
         if autoBadKarma then
             for _, target in pairs(Players:GetPlayers()) do
@@ -248,3 +245,30 @@ spawn(function()
 end)
 
 print("All features are active.")
+
+-- ==================== Make GUI draggable ====================
+local dragging = false
+local dragStart, startPos
+
+title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        -- To capture mouse release
+        local conn
+        conn = UserInputService.InputEnded:Connect(function(input2)
+            if input2.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = false
+                conn:Disconnect()
+            end
+        end)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        frame.Position = startPos + UDim2.new(0, delta.X, 0, delta.Y)
+    end
+end)
