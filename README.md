@@ -1,14 +1,18 @@
--- Services
+-- Place this in a LocalScript under StarterPlayer -> StarterPlayerScripts
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
-local Workspace = game:GetService("Workspace")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
+-- Wait for PlayerGui
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
 -- Create Main Screen GUI
-local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
+local gui = Instance.new("ScreenGui")
 gui.Name = "MyFeatureUI"
+gui.Parent = PlayerGui
 
 local mainFrame = Instance.new("Frame", gui)
 mainFrame.Size = UDim2.new(0, 600, 0, 700)
@@ -100,7 +104,7 @@ local function addPetOption(text)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
     btn.MouseButton1Click:Connect(function()
-        -- Equip pet
+        -- Equip pet logic
         local petsFolder = LocalPlayer:WaitForChild("petsFolder")
         for _, folder in pairs(petsFolder:GetChildren()) do
             if folder:IsA("Folder") then
@@ -139,6 +143,7 @@ populatePets()
 -- Karma toggles
 local autoGoodKarma = false
 local autoBadKarma = false
+
 local function createSwitch(parent, text, callback)
     local switchBtn = Instance.new("TextButton", parent)
     switchBtn.Size = UDim2.new(0, 200, 0, 30)
@@ -228,6 +233,7 @@ end)
 -- ========================
 -- Whitelist Friends
 local playerWhitelist = {}
+
 local function createWhitelistSwitch(parent, text)
     local btn = createSwitch(parent, text, function(active)
         if active then
@@ -299,6 +305,24 @@ end)
 local autoKill = false
 local targetPlayerNames = {}
 local selectedTarget = nil
+
+local function createSwitch(parent, text, callback)
+    local switchBtn = Instance.new("TextButton", parent)
+    switchBtn.Size = UDim2.new(0, 200, 0, 30)
+    switchBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    switchBtn.Text = text .. ": OFF"
+    switchBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    switchBtn.Font = Enum.Font.Merriweather
+    switchBtn.TextSize = 14
+    
+    local active = false
+    switchBtn.MouseButton1Click:Connect(function()
+        active = not active
+        switchBtn.Text = text .. ": " .. (active and "ON" or "OFF")
+        callback(active)
+    end)
+    return switchBtn
+end
 
 local killSwitch = createSwitch(killSection, "Auto Kill", function(enabled)
     autoKill = enabled
@@ -380,10 +404,10 @@ local function createDropdown(parent, label, callback)
         table.insert(options, btn)
     end
 
-    dropdownBtn.MouseButton1Click:Connect(function()
+    dropdownBtn.MouseButton1Click = function()
         optionsFrame.Visible = not optionsFrame.Visible
         optionsFrame.Size = UDim2.new(0, 220, 0, #options * 30)
-    end)
+    end
 
     return {
         Add = addOption,
@@ -418,23 +442,16 @@ for _, player in ipairs(Players:GetPlayers()) do
         targetDropdown:Add(player.DisplayName)
     end
 end
-
--- Player joins
 Players.PlayerAdded:Connect(function(player)
     if player ~= LocalPlayer then
         targetDropdown:Add(player.DisplayName)
     end
 end)
-
--- Player leaves
 Players.PlayerRemoving:Connect(function(player)
     -- Remove from list
-    if table.find(targetPlayerNames, player.Name) then
-        for i, v in ipairs(targetPlayerNames) do
-            if v == player.Name then
-                table.remove(targetPlayerNames, i)
-                break
-            end
+    for i, v in ipairs(targetPlayerNames) do
+        if v == player.Name then
+            table.remove(targetPlayerNames, i)
         end
     end
     -- Refresh dropdown
@@ -450,7 +467,7 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Button to remove selected target
+-- Remove target button
 local removeTargetBtn = Instance.new("TextButton", killSection)
 removeTargetBtn.Size = UDim2.new(0, 200, 0, 30)
 removeTargetBtn.Position = UDim2.new(0, 10, 0, 120)
@@ -470,7 +487,26 @@ removeTargetBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Start Kill Button
-local startKillSwitch = createSwitch(killSection, "Start Kill", function(enabled)
+local function createSwitch(parent, text, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0, 200, 0, 30)
+    btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+    btn.Text = text .. ": OFF"
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.Merriweather
+    btn.TextSize = 14
+
+    local active = false
+    btn.MouseButton1Click:Connect(function()
+        active = not active
+        btn.Text = text .. ": " .. (active and "ON" or "OFF")
+        callback(active)
+    end)
+    return btn
+end
+
+local autoKill = false
+local killToggle = createSwitch(killSection, "Auto Kill", function(enabled)
     autoKill = enabled
     if enabled then
         task.spawn(function()
@@ -505,8 +541,7 @@ local startKillSwitch = createSwitch(killSection, "Start Kill", function(enabled
     end
 end)
 
--- ========================
--- View Player (Follow) System
+-- View Player (Follow) system
 local followTargetName = nil
 local following = false
 
@@ -542,7 +577,6 @@ for _, player in ipairs(Players:GetPlayers()) do
     end
 end
 
--- Player join/leave updates
 Players.PlayerAdded:Connect(function(player)
     if player ~= LocalPlayer then
         viewDropdown:Add(player.DisplayName)
@@ -564,7 +598,7 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Button to stop following
+-- Stop following button
 local stopFollowBtn = Instance.new("TextButton", killSection)
 stopFollowBtn.Size = UDim2.new(0, 200, 0, 30)
 stopFollowBtn.Position = UDim2.new(0, 10, 0, 160)
@@ -653,7 +687,6 @@ local lightingDropdown = createDropdown(timeSection, "Change Time", function(sel
     setLighting(selection)
 end)
 
--- Add options to lighting dropdown
 for _, option in ipairs(timeOptions) do
     lightingDropdown:Add(option)
 end
