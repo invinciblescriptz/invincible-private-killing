@@ -216,9 +216,33 @@ toolsFolder:AddSwitch("Auto Handstands", function(s)
     if s then startAutoRep("Handstands", "AutoHandstands") end
 end)
 
-toolsFolder:AddSwitch("Fast Punch", function(s)
+toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
     states.FastPunch = s
-end)
+    if s then
+        task.spawn(function()
+            while states.FastPunch and getgenv().NexusRunning do
+                pcall(function()
+                    if muscleEvent then
+                        muscleEvent:FireServer("punch", "rightHand")
+                        muscleEvent:FireServer("punch", "leftHand")
+                    end
+                    local char = LocalPlayer.Character
+                    if char then
+                        local punch = char:FindFirstChild("Punch") or LocalPlayer.Backpack:FindFirstChild("Punch")
+                        if punch and punch.Parent ~= char then
+                            char.Humanoid:EquipTool(punch)
+                        end
+                        if punch and punch.Parent == char then
+                            local atk = punch:FindFirstChild("attackTime")
+                            if atk and atk:IsA("NumberValue") then atk.Value = 0.01 end
+                            punch:Activate()
+                        end
+                    end
+                end)
+                task.wait(0.085)
+            end
+        end)
+    end
 
 toolsFolder:AddSwitch("Infinite Jump", function(s)
     toggleInfiniteJump(s)
