@@ -1,5 +1,8 @@
+-- Load the external ScriptLibrary
 local ScriptLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X", true))()
-local MainWindow = ScriptLibrary:AddWindow(string.format("invincible private killing || Hello %s", LocalPlayer.DisplayName), {
+
+-- Create the main window
+local MainWindow = ScriptLibrary:AddWindow(string.format("invincible private killing || Hello %s", game.Players.LocalPlayer.DisplayName), {
     ["min_size"] = Vector2.new(470, 660),
     ["can_resize"] = true,
     ["main_color"] = Color3.fromRGB(255, 192, 203) -- Pink color
@@ -13,15 +16,25 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local window = MainWindow
 
+-- Create tabs and folders
 local KillerTab = window:AddTab("Kill")
 local toolsFolder = KillerTab:AddFolder("Tools")
 
+-- Initialize variables
 local states = {}
 local AutoGoodKarma, AutoBadKarma, autoKill = false, false, false
 local SelectedTarget = nil
 local playerWhitelist = {}
 local ViewTargetName = nil
 local spying = false
+
+-- Helper function to check if game is loaded
+local function waitForGame()
+    if not game:IsLoaded() then
+        game.Loaded:Wait()
+    end
+end
+waitForGame()
 
 -- Auto Punch (Fast)
 toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
@@ -68,7 +81,7 @@ toolsFolder:AddButton("Boost FPS (Lag Fix)", function()
     end
 end)
 
--- Auto Lift Gamepass
+-- Auto Lift Gamepass (Auto Free)
 toolsFolder:AddButton("Auto Lift Gamepass (Free)", function()
     pcall(function()
         local gpFolder = ReplicatedStorage:FindFirstChild("gamepassIds")
@@ -242,9 +255,10 @@ local function updateTargetDropdown()
     local options = {}
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LP then
-            options[#options + 1] = player.DisplayName
+            table.insert(options, player.DisplayName)
         end
     end
+    -- Clear previous options
     targetDropdown:Clear()
     for _, name in ipairs(options) do
         targetDropdown:Add(name)
@@ -305,10 +319,10 @@ local function populateViewDropdown()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LP then
             ViewDropdownItems[player.Name] = player.DisplayName
-            options[#options + 1] = player.DisplayName
+            table.insert(options, player.DisplayName)
         end
     end
-    -- Clear and add options
+    -- Clear previous options
     viewDropdown:Clear()
     for _, displayName in ipairs(options) do
         viewDropdown:Add(displayName)
@@ -330,7 +344,7 @@ end)
 Players.PlayerRemoving:Connect(function(player)
     if player ~= LP then
         populateViewDropdown()
-        -- Remove from list
+        -- Remove from target list
         for i, name in ipairs(targetPlayerNames) do
             if name == player.Name then
                 table.remove(targetPlayerNames, i)
@@ -339,7 +353,7 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Follow selected player
+-- Follow selected player function
 local function followPlayer(target)
     local myChar = LP.Character
     local targetChar = target.Character
