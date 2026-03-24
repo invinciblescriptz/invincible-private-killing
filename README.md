@@ -1,11 +1,11 @@
 -- Load the external ScriptLibrary
-local ScriptLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X", true))()
+local ScriptLibrary = loadstring(game:HttpGet("[https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X](https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main.client.lua)", true))()
 
 -- Create the main window
 local MainWindow = ScriptLibrary:AddWindow(string.format("invincible private killing || Hello %s", game.Players.LocalPlayer.DisplayName), {
     ["min_size"] = Vector2.new(470, 660),
     ["can_resize"] = true,
-    ["main_color"] = Color3.fromRGB(255, 192, 203) -- Pink color
+    ["main_color"] = Color3.fromRGB(0, 10, 0)
 })
 
 local Players = game:GetService("Players")
@@ -28,7 +28,7 @@ local playerWhitelist = {}
 local ViewTargetName = nil
 local spying = false
 
--- Helper function to check if game is loaded
+-- Helper function to wait for game load
 local function waitForGame()
     if not game:IsLoaded() then
         game.Loaded:Wait()
@@ -361,8 +361,8 @@ local function followPlayer(target)
     local myHRP = myChar:FindFirstChild("HumanoidRootPart")
     local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
     if myHRP and targetHRP then
-        local followPos = targetHRP.Position - (targetHRP.CFrame.LookVector * 3)
-        myHRP.CFrame = CFrame.new(followPos, targetHRP.Position)
+        local followPos = targetHRP.CFrame * CFrame.new(0, 0, -3)
+        myHRP.CFrame = followPos
     end
 end
 
