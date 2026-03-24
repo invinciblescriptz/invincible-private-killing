@@ -28,17 +28,19 @@ local function toggleAntiAfk(state)
             end)
         end)
     else
-        if antiAfkConn then antiAfkConn:Disconnect() antiAfkConn = nil end
+        if antiAfkConn then
+            antiAfkConn:Disconnect()
+            antiAfkConn = nil
+        end
     end
 end
 
--- =================== Tabs and Features ===================
-
--- Main Kill Tab
+-- =================== Kill Tab ===================
 local KillerTab = window:AddTab("Kill")
 local Kill = KillerTab
 
 -- Auto Karma
+local AutoGoodKarma = false
 Kill:AddSwitch("Auto Good Karma", function(state)
     AutoGoodKarma = state
     task.spawn(function()
@@ -49,8 +51,8 @@ Kill:AddSwitch("Auto Good Karma", function(state)
             if char and rightHand and leftHand then
                 for _, target in ipairs(Players:GetPlayers()) do
                     if target ~= LP then
-                        local evilKarma = target:FindFirstChild("evilKarma")
-                        local goodKarma = target:FindFirstChild("goodKarma")
+                        local evilKarma = target.Character and target.Character:FindFirstChild("evilKarma")
+                        local goodKarma = target.Character and target.Character:FindFirstChild("goodKarma")
                         if evilKarma and goodKarma and evilKarma:IsA("IntValue") and goodKarma:IsA("IntValue") then
                             if evilKarma.Value > goodKarma.Value then
                                 local rootPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
@@ -71,6 +73,7 @@ Kill:AddSwitch("Auto Good Karma", function(state)
 end)
 
 -- Auto Bad Karma
+local AutoBadKarma = false
 Kill:AddSwitch("Auto Bad Karma", function(state)
     AutoBadKarma = state
     task.spawn(function()
@@ -81,8 +84,8 @@ Kill:AddSwitch("Auto Bad Karma", function(state)
             if char and rightHand and leftHand then
                 for _, target in ipairs(Players:GetPlayers()) do
                     if target ~= LP then
-                        local evilKarma = target:FindFirstChild("evilKarma")
-                        local goodKarma = target:FindFirstChild("goodKarma")
+                        local evilKarma = target.Character and target.Character:FindFirstChild("evilKarma")
+                        local goodKarma = target.Character and target.Character:FindFirstChild("goodKarma")
                         if evilKarma and goodKarma and evilKarma:IsA("IntValue") and goodKarma:IsA("IntValue") then
                             if goodKarma.Value > evilKarma.Value then
                                 local rootPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
@@ -102,7 +105,7 @@ Kill:AddSwitch("Auto Bad Karma", function(state)
     end)
 end)
 
--- Auto Whitelist friends
+-- Auto Whitelist Friends
 local playerWhitelist = {}
 Kill:AddSwitch("Auto Whitelist Friends", function(state)
     if state then
@@ -137,6 +140,7 @@ Kill:AddTextBox("UnWhitelist", function(text)
     end
 end)
 
+-- Auto Kill
 local autoKill = false
 Kill:AddSwitch("Auto Kill", function(state)
     autoKill = state
@@ -173,6 +177,7 @@ end)
 
 -- Target selection dropdown
 local targetPlayerNames = {}
+local SelectedTarget = nil
 local targetDropdown = Kill:AddDropdown("Select Target", function(displayName)
     for _, player in ipairs(Players:GetPlayers()) do
         if player.DisplayName == displayName then
@@ -202,11 +207,14 @@ Players.PlayerAdded:Connect(function()
     updateTargetDropdown()
 end)
 Players.PlayerRemoving:Connect(function(player)
-    updateTargetDropdown()
-    for i = #targetPlayerNames, 1, -1 do
-        if targetPlayerNames[i] == player.Name then
-            table.remove(targetPlayerNames, i)
+    -- Remove from options
+    if player ~= LP then
+        for i = #targetPlayerNames, 1, -1 do
+            if targetPlayerNames[i] == player.Name then
+                table.remove(targetPlayerNames, i)
+            end
         end
+        updateTargetDropdown()
     end
 end)
 
@@ -252,32 +260,26 @@ local viewDropdown = Kill:AddDropdown("Select View Target", function(value)
     ViewTargetName = value
 end)
 
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LP then
-        viewDropdown:Add(player.DisplayName)
-        ViewDropdownItems[player.Name] = player.DisplayName
+local function populateViewDropdown()
+    viewDropdown:Clear()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LP then
+            viewDropdown:Add(player.DisplayName)
+            ViewDropdownItems[player.Name] = player.DisplayName
+        end
     end
 end
 
-Players.PlayerAdded:Connect(function(player)
-    if player ~= LP then
-        viewDropdown:Add(player.DisplayName)
-        ViewDropdownItems[player.Name] = player.DisplayName
-    end
+populateViewDropdown()
+
+Players.PlayerAdded:Connect(function()
+    populateViewDropdown()
 end)
 
 Players.PlayerRemoving:Connect(function(player)
     if player ~= LP then
         ViewDropdownItems[player.Name] = nil
-        -- rebuild dropdown
-        local options = {}
-        for _, display in pairs(ViewDropdownItems) do
-            options[#options + 1] = display
-        end
-        viewDropdown:Clear()
-        for _, displayName in ipairs(options) do
-            viewDropdown:Add(displayName)
-        end
+        populateViewDropdown()
     end
 end)
 
@@ -339,18 +341,15 @@ Kill:AddButton("Remove Punch Anim", function()
     local character = LP.Character
     if character and character:FindFirstChild("Humanoid") then
         local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                if track.Animation and (track.Animation.AnimationId == "rbxassetid://3638729053" or track.Animation.AnimationId == "rbxassetid://3638767427") then
-                    track:Stop()
-                end
+        for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
+            if track.Animation and (track.Animation.AnimationId == "rbxassetid://3638729053" or track.Animation.AnimationId == "rbxassetid://3638767427") then
+                track:Stop()
             end
         end
     end
 end)
 
--- =================== Additional kill method tab ===================
-
+-- =================== kill method tab ===================
 local killmethodTab = window:AddTab("kill method")
 
 -- Fast Punch toggle
@@ -474,9 +473,10 @@ local function changeTime(selection)
     end
 end
 
-local timeDropdown = killmethodTab:AddDropdown("change time", changeTime)
+local timeDropdown = killmethodTab:AddDropdown("change time", function(selection)
+    changeTime(selection)
+end)
+
 for _, option in ipairs(timeOptions) do
     timeDropdown:Add(option)
 end
-
--- =================== END ===================
