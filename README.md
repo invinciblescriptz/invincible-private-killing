@@ -1,8 +1,15 @@
+local PlayerService = game:GetService("Players")
+local ReplicatedStorageService = game:GetService("ReplicatedStorage")
+local LightingService = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
+local LocalPlayer = PlayerService.LocalPlayer
+local CharacterModel = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
 local ScriptLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X", true))()
 local MainWindow = ScriptLibrary:AddWindow(string.format("Genesis Hub | Hello %s", LocalPlayer.DisplayName), {
-    min_size = Vector2.new(660, 470),
-    can_resize = true,
-    main_color = Color3.fromRGB(255, 192, 203) -- Light pink color
+    ["min_size"] = Vector2.new(400, 870),
+    ["can_resize"] = true,
+    ["main_color"] = Color3.fromRGB(255, 192, 203) -- Light pink
 })
 
 local Killer = MainWindow:AddTab("Kill") -- Corrected 'window' to 'MainWindow'
