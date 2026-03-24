@@ -22,6 +22,7 @@ local tabInfo = window:AddTab("Information")
 local tabMain = window:AddTab("Main")
 local tabTeleport = window:AddTab("Teleport")
 local tabRebirth = window:AddTab("Rebirth")
+-- Removed the empty 'Kill' tab
 
 -- Info tab content
 tabInfo:AddLabel("Invincible likes Ninja Turtles").TextSize = 24
@@ -44,7 +45,7 @@ if not muscleEvent then
     return
 end
 
-getgenv().NexusRunning = true -- Global flag for script running
+getgenv().NexusRunning = true -- Global flag
 
 -- State variables
 local states = {
@@ -226,9 +227,9 @@ toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
                         muscleEvent:FireServer("punch", "rightHand")
                         muscleEvent:FireServer("punch", "leftHand")
                     end
-                    local char = LocalPlayer.Character
+                    local char = LP.Character
                     if char then
-                        local punch = char:FindFirstChild("Punch") or LocalPlayer.Backpack:FindFirstChild("Punch")
+                        local punch = char:FindFirstChild("Punch") or LP.Backpack:FindFirstChild("Punch")
                         if punch and punch.Parent ~= char then
                             char.Humanoid:EquipTool(punch)
                         end
@@ -243,6 +244,7 @@ toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
             end
         end)
     end
+end)
 
 toolsFolder:AddSwitch("Infinite Jump", function(s)
     toggleInfiniteJump(s)
