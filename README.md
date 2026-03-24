@@ -1,21 +1,24 @@
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
--- Verify remote event
+-- Remote Event
 local muscleEvent = LocalPlayer:FindFirstChild("muscleEvent") or ReplicatedStorage:FindFirstChild("muscleEvent")
 if not muscleEvent then
-    warn("muscleEvent not found! Ensure the remote event exists.")
+    warn("muscleEvent not found! Make sure it exists.")
 end
 
--- Load UI library
+-- UI Library
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 local Window = WindUI.new({ Title = "Muscle Legends OP", Center = true, AutoShow = true })
+
+-- Main Tab
 local KillTab = Window:CreateTab("Kill")
 
--- Flags for loops
+-- Flags
 local autoGoodKarma = false
 local autoBadKarma = false
 local autoKillAll = false
@@ -25,19 +28,20 @@ local autoEquipPunch = false
 local autoGroundSlams = false
 local autoBrawl = false
 
+local following = false
+local followTargetName = nil
+
 local playerWhitelist = {}
 local targetPlayerNames = {}
 
--- Utility functions
+-- Helper Functions
 local function safeFire(event, ...)
     if event then
-        pcall(function()
-            event:FireServer(...)
-        end)
+        pcall(function() event:FireServer(...) end)
     end
 end
 
-local function getCharacterParts(plr)
+local function getHRPAndHum(plr)
     if plr and plr.Character then
         local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
         local hum = plr.Character:FindFirstChild("Humanoid")
@@ -46,11 +50,11 @@ local function getCharacterParts(plr)
     return nil, nil
 end
 
--- **Pets Section**
+-- Pets Section
 local PetsSection = KillTab:AddSection("Pets")
 PetsSection:AddLabel("Select Pet (Damage / Durability)")
 local petDropdown = PetsSection:AddDropdown("Select Pet", function(petName)
-    -- Unequip all pets first
+    -- Unequip all pets
     pcall(function()
         for _, folder in pairs(LocalPlayer.petsFolder:GetChildren()) do
             if folder:IsA("Folder") then
@@ -61,12 +65,12 @@ local petDropdown = PetsSection:AddDropdown("Select Pet", function(petName)
         end
     end)
     task.wait(0.4)
-    -- Equip selected pet(s)
-    local equipped = 0
+    -- Equip selected pet(s) up to 8
+    local count = 0
     for _, pet in pairs(LocalPlayer.petsFolder:FindFirstChild("Unique"):GetChildren()) do
-        if pet.Name == petName and equipped < 8 then
+        if pet.Name == petName and count < 8 then
             ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", pet)
-            equipped = equipped + 1
+            count = count + 1
             task.wait(0.12)
         end
     end
@@ -74,8 +78,7 @@ end)
 petDropdown:Add("Wild Wizard")
 petDropdown:Add("Mighty Monster")
 
-
--- **Karma Auto Attack**
+-- Karma Auto Attack
 local function karmaLoop(isGood)
     task.spawn(function()
         while (isGood and autoGoodKarma) or (not isGood and autoBadKarma) do
@@ -88,9 +91,8 @@ local function karmaLoop(isGood)
                         if evil and good then
                             local condition = isGood and (evil.Value > good.Value) or (good.Value > evil.Value)
                             if condition then
-                                local root, _ = getCharacterParts(plr)
+                                local root, _ = getHRPAndHum(plr)
                                 if root then
-                                    -- Touch + punch
                                     local rh = char:FindFirstChild("RightHand")
                                     local lh = char:FindFirstChild("LeftHand")
                                     if rh and lh then
@@ -119,7 +121,7 @@ KillTab:AddSwitch("Auto Bad Karma", function(state)
     if state then karmaLoop(false) end
 end)
 
--- **Whitelist**
+-- Whitelist
 local function toggleWhitelist(state)
     if state then
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -142,18 +144,18 @@ WhitelistSection:AddTextBox("Unwhitelist Player", function(txt)
     playerWhitelist[txt] = nil
 end)
 
--- **Auto Kill All**
-local killAllToggle = false
+-- Auto Kill All
+local killAllActive = false
 KillTab:AddSwitch("Auto Kill All", function(state)
-    killAllToggle = state
+    killAllActive = state
     if not state then return end
     task.spawn(function()
-        while killAllToggle do
+        while killAllActive do
             local char = LocalPlayer.Character
             if char then
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= LocalPlayer and not playerWhitelist[plr.Name] then
-                        local root, _ = getCharacterParts(plr)
+                        local root, _ = getHRPAndHum(plr)
                         if root then
                             safeFire(muscleEvent, "punch", "rightHand")
                             safeFire(muscleEvent, "punch", "leftHand")
@@ -166,7 +168,7 @@ KillTab:AddSwitch("Auto Kill All", function(state)
     end)
 end)
 
--- **Target Kill**
+-- Target Kill
 local targetPlayerNames = {}
 local TargetSection = KillTab:AddSection("Targets")
 local targetDropdown = TargetSection:AddDropdown("Add Kill Target", function(displayName)
@@ -180,12 +182,12 @@ end)
 TargetSection:AddButton("Clear All Targets", function()
     targetPlayerNames = {}
 end)
--- Populate dropdown with current players
+-- Populate dropdown
 for _, plr in ipairs(Players:GetPlayers()) do
     if plr ~= LocalPlayer then
         targetDropdown:Add(plr.DisplayName)
     end
-end
+end)
 Players.PlayerAdded:Connect(function(plr)
     if plr ~= LocalPlayer then
         targetDropdown:Add(plr.DisplayName)
@@ -201,7 +203,7 @@ KillTab:AddSwitch("Kill Selected Targets", function(state)
             for _, name in ipairs(targetPlayerNames) do
                 local plr = Players:FindFirstChild(name)
                 if plr and plr.Character then
-                    local root, _ = getCharacterParts(plr)
+                    local root, _ = getHRPAndHum(plr)
                     if root then
                         safeFire(muscleEvent, "punch", "rightHand")
                         safeFire(muscleEvent, "punch", "leftHand")
@@ -213,7 +215,7 @@ KillTab:AddSwitch("Kill Selected Targets", function(state)
     end)
 end)
 
--- **Auto Punch (No animation)**
+-- Auto Punch (No animation)
 KillTab:AddSwitch("Auto Punch [No Animation - OP]", function(state)
     autoPunchNoAnim = state
     if state then
@@ -236,7 +238,7 @@ KillTab:AddSwitch("Auto Punch [No Animation - OP]", function(state)
     end
 end)
 
--- **Auto Equip Punch**
+-- Auto Equip Punch
 KillTab:AddSwitch("Auto Equip Punch", function(state)
     autoEquipPunch = state
     if state then
@@ -250,7 +252,7 @@ KillTab:AddSwitch("Auto Equip Punch", function(state)
     end
 end)
 
--- **Remove Punch Animation Button**
+-- Remove Punch Animation
 KillTab:AddButton("Remove Punch Animation", function()
     local blockedIds = {["rbxassetid://3638729053"] = true, ["rbxassetid://3638767427"] = true}
     local function block(char)
@@ -274,7 +276,7 @@ KillTab:AddButton("Remove Punch Animation", function()
     LocalPlayer.CharacterAdded:Connect(block)
 end)
 
--- **Auto Slams Ground**
+-- Auto Slams Ground
 KillTab:AddSwitch("Auto Ground Slams", function(state)
     autoGroundSlams = state
     if not state then return end
@@ -296,7 +298,7 @@ KillTab:AddSwitch("Auto Ground Slams", function(state)
     end)
 end)
 
--- **Good Mode (Brawl)**
+-- Good Mode (Brawl)
 KillTab:AddSwitch("Good Mode (Brawl Loop)", function(state)
     autoBrawl = state
     if not state then return end
@@ -308,15 +310,15 @@ KillTab:AddSwitch("Good Mode (Brawl Loop)", function(state)
     end)
 end)
 
--- **Size Glitch (NaN)**
+-- Size Glitch NaN
 KillTab:AddButton("Combo NaN (Size Glitch)", function()
     if ReplicatedStorage and ReplicatedStorage.rEvents and ReplicatedStorage.rEvents.changeSpeedSizeRemote then
-        -- Trigger size glitch with NaN
+        -- Trigger NaN size
         ReplicatedStorage.rEvents.changeSpeedSizeRemote:InvokeServer("changeSize", 0/0)
     end
 end)
 
--- **Follow / TP Behind Player**
+-- Follow / TP behind target
 local followTargetName = nil
 local followDropdown = KillTab:AddDropdown("Follow / TP Behind Player", function(displayName)
     followTargetName = displayName
@@ -326,7 +328,7 @@ for _, plr in ipairs(Players:GetPlayers()) do
     if plr ~= LocalPlayer then
         followDropdown:Add(plr.DisplayName)
     end
-end
+end)
 KillTab:AddButton("Stop Following", function()
     following = false
     followTargetName = nil
@@ -348,44 +350,42 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- **Change Time**
-local times = {"Morning","Noon","Afternoon","Sunset","Night","Midnight","Dawn","Early Morning"}
+-- Change Time
+local times = {"Morning", "Noon", "Afternoon", "Sunset", "Night", "Midnight", "Dawn", "Early Morning"}
 local timeDropdown = KillTab:AddDropdown("Change Time", function(sel)
     Lighting.Brightness = 2
     Lighting.FogEnd = 100000
     if sel == "Morning" then
         Lighting.ClockTime = 6
-        Lighting.Ambient = Color3.fromRGB(200,200,255)
+        Lighting.Ambient = Color3.fromRGB(200, 200, 255)
     elseif sel == "Noon" then
         Lighting.ClockTime = 12
         Lighting.Brightness = 3
-        Lighting.Ambient = Color3.fromRGB(255,255,255)
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
     elseif sel == "Afternoon" then
         Lighting.ClockTime = 16
-        Lighting.Ambient = Color3.fromRGB(255,220,180)
+        Lighting.Ambient = Color3.fromRGB(255, 220, 180)
     elseif sel == "Sunset" then
         Lighting.ClockTime = 18
-        Lighting.Ambient = Color3.fromRGB(255,150,100)
+        Lighting.Ambient = Color3.fromRGB(255, 150, 100)
         Lighting.FogEnd = 500
     elseif sel == "Night" then
         Lighting.ClockTime = 20
         Lighting.Brightness = 1.5
-        Lighting.Ambient = Color3.fromRGB(100,100,150)
+        Lighting.Ambient = Color3.fromRGB(100, 100, 150)
     elseif sel == "Midnight" then
         Lighting.ClockTime = 0
         Lighting.Brightness = 1
-        Lighting.Ambient = Color3.fromRGB(50,50,100)
+        Lighting.Ambient = Color3.fromRGB(50, 50, 100)
     elseif sel == "Dawn" then
         Lighting.ClockTime = 4
-        Lighting.Ambient = Color3.fromRGB(180,180,220)
+        Lighting.Ambient = Color3.fromRGB(180, 180, 220)
     elseif sel == "Early Morning" then
         Lighting.ClockTime = 2
         Lighting.Brightness = 1.2
-        Lighting.Ambient = Color3.fromRGB(100,120,180)
+        Lighting.Ambient = Color3.fromRGB(100, 120, 180)
     end
 end)
-for _, t in ipairs(times) do
-    timeDropdown:Add(t)
-end
+for _, t in ipairs(times) do timeDropdown:Add(t) end
 
-print("✅ Muscle Legends Kill Tab Fixed & Loaded!")
+print("✅ Muscle Legends Kill Tab loaded successfully!")
