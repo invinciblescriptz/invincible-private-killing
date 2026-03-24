@@ -1,16 +1,14 @@
--- Create a simple UI with ScreenGui
+-- Create a UI window
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-gui.Name = "InvincibleUI"
+gui.Name = "MyFeatureUI"
 
--- Create a main frame
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 600, 0, 400)
-frame.Position = UDim2.new(0.5, -300, 0.5, -200)
+frame.Size = UDim2.new(0, 650, 0, 500)
+frame.Position = UDim2.new(0.5, -325, 0.5, -250)
 frame.BackgroundColor3 = Color3.fromRGB(0, 10, 0)
 frame.BorderSizePixel = 0
 
--- Title
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 50)
 title.BackgroundColor3 = Color3.fromRGB(0, 20, 0)
@@ -19,48 +17,86 @@ title.Text = "Invincible Private Killing"
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 20
 
--- Auto Punch Toggle
-local autoPunchToggle = Instance.new("TextButton", frame)
-autoPunchToggle.Size = UDim2.new(0, 200, 0, 40)
-autoPunchToggle.Position = UDim2.new(0.5, -100, 0, 60)
-autoPunchToggle.Text = "Auto Punch (Fast): OFF"
-autoPunchToggle.BackgroundColor3 = Color3.fromRGB(0,50,0)
-autoPunchToggle.TextColor3 = Color3.white
+local yOffset = 60
 
--- Auto Kill Toggle
-local autoKillToggle = Instance.new("TextButton", frame)
-autoKillToggle.Size = UDim2.new(0, 200, 0, 40)
-autoKillToggle.Position = UDim2.new(0.5, -100, 0, 110)
-autoKillToggle.Text = "Auto Kill: OFF"
-autoKillToggle.BackgroundColor3 = Color3.fromRGB(0,50,0)
-autoKillToggle.TextColor3 = Color3.white
+-- Toggle: Auto Punch (Fast)
+local punchToggle = Instance.new("TextButton", frame)
+punchToggle.Size = UDim2.new(0, 300, 0, 40)
+punchToggle.Position = UDim2.new(0, 20, 0, yOffset)
+punchToggle.Text = "Auto Punch (Fast): OFF"
+punchToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+punchToggle.TextColor3 = Color3.white
 
--- Follow Player Button
-local followButton = Instance.new("TextButton", frame)
-followButton.Size = UDim2.new(0, 200, 0, 40)
-followButton.Position = UDim2.new(0.5, -100, 0, 160)
-followButton.Text = "Follow Player"
-followButton.BackgroundColor3 = Color3.fromRGB(0,50,0)
-followButton.TextColor3 = Color3.white
+-- Toggle: Auto Kill
+local killToggle = Instance.new("TextButton", frame)
+killToggle.Size = UDim2.new(0, 300, 0, 40)
+killToggle.Position = UDim2.new(0, 20, 0, yOffset + 50)
+killToggle.Text = "Auto Kill: OFF"
+killToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+killToggle.TextColor3 = Color3.white
 
--- Stop Follow Button
-local stopFollowButton = Instance.new("TextButton", frame)
-stopFollowButton.Size = UDim2.new(0, 200, 0, 40)
-stopFollowButton.Position = UDim2.new(0.5, -100, 0, 210)
-stopFollowButton.Text = "Stop Following"
-stopFollowButton.BackgroundColor3 = Color3.fromRGB(0,50,0)
-stopFollowButton.TextColor3 = Color3.white
+-- Toggle: Auto Good Karma
+local goodKarmaToggle = Instance.new("TextButton", frame)
+goodKarmaToggle.Size = UDim2.new(0, 300, 0, 40)
+goodKarmaToggle.Position = UDim2.new(0, 20, 0, yOffset + 100)
+goodKarmaToggle.Text = "Auto Good Karma: OFF"
+goodKarmaToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+goodKarmaToggle.TextColor3 = Color3.white
 
--- Variables for toggles
+-- Toggle: Auto Bad Karma
+local badKarmaToggle = Instance.new("TextButton", frame)
+badKarmaToggle.Size = UDim2.new(0, 300, 0, 40)
+badKarmaToggle.Position = UDim2.new(0, 20, 0, yOffset + 150)
+badKarmaToggle.Text = "Auto Bad Karma: OFF"
+badKarmaToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+badKarmaToggle.TextColor3 = Color3.white
+
+-- Button: Auto Lift Gamepass
+local liftGPButton = Instance.new("TextButton", frame)
+liftGPButton.Size = UDim2.new(0, 300, 0, 40)
+liftGPButton.Position = UDim2.new(0, 20, 0, yOffset + 200)
+liftGPButton.Text = "Auto Lift Gamepass"
+liftGPButton.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+liftGPButton.TextColor3 = Color3.white
+
+-- Input: Enter Player Name for Follow
+local followInput = Instance.new("TextBox", frame)
+followInput.Size = UDim2.new(0, 250, 0, 40)
+followInput.Position = UDim2.new(0, 350, 0, yOffset + 50)
+followInput.PlaceholderText = "Enter Player Name"
+followInput.Text = ""
+followInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+followInput.TextColor3 = Color3.white
+
+-- Button: Follow Player
+local followBtn = Instance.new("TextButton", frame)
+followBtn.Size = UDim2.new(0, 250, 0, 40)
+followBtn.Position = UDim2.new(0, 350, 0, yOffset + 100)
+followBtn.Text = "Follow Player"
+followBtn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+followBtn.TextColor3 = Color3.white
+
+-- Button: Stop Following
+local stopFollowBtn = Instance.new("TextButton", frame)
+stopFollowBtn.Size = UDim2.new(0, 250, 0, 40)
+stopFollowBtn.Position = UDim2.new(0, 350, 0, yOffset + 150)
+stopFollowBtn.Text = "Stop Following"
+stopFollowBtn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+stopFollowBtn.TextColor3 = Color3.white
+
+-- Variables
 local autoPunch = false
 local autoKill = false
+local autoGoodKarma = false
+local autoBadKarma = false
 local spying = false
 local targetPlayerName = nil
+local whitelist = {}
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 
--- Helper to get HumanoidRootPart
+-- Helper function to get HRP
 local function getHRP(character)
     if character then
         return character:FindFirstChild("HumanoidRootPart")
@@ -68,44 +104,68 @@ local function getHRP(character)
     return nil
 end
 
--- Toggle Auto Punch
-autoPunchToggle.MouseButton1Click:Connect(function()
+-- Toggle handlers
+punchToggle.MouseButton1Click: function()
     autoPunch = not autoPunch
-    autoPunchToggle.Text = "Auto Punch (Fast): " .. (autoPunch and "ON" or "OFF")
-end)
+    punchToggle.Text = "Auto Punch (Fast): " .. (autoPunch and "ON" or "OFF")
+end
 
--- Toggle Auto Kill
-autoKillToggle.MouseButton1Click:Connect(function()
+killToggle.MouseButton1Click: function()
     autoKill = not autoKill
-    autoKillToggle.Text = "Auto Kill: " .. (autoKill and "ON" or "OFF")
-end)
+    killToggle.Text = "Auto Kill: " .. (autoKill and "ON" or "OFF")
+end
 
--- Follow Button
-followButton.MouseButton1Click:Connect(function()
-    -- Prompt user to select a player name
-    local selectionGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
-    local box = Instance.new("TextBox", selectionGui)
-    box.Size = UDim2.new(0, 300, 0, 50)
-    box.Position = UDim2.new(0.5, -150, 0.5, -25)
-    box.PlaceholderText = "Enter Player Name"
-    box.Text = ""
-    box.FocusLost:Connect(function()
-        targetPlayerName = box.Text
-        selectionGui:Destroy()
-        spying = true
+goodKarmaToggle.MouseButton1Click: function()
+    autoGoodKarma = not autoGoodKarma
+    goodKarmaToggle.Text = "Auto Good Karma: " .. (autoGoodKarma and "ON" or "OFF")
+end
+
+badKarmaToggle.MouseButton1Click: function()
+    autoBadKarma = not autoBadKarma
+    badKarmaToggle.Text = "Auto Bad Karma: " .. (autoBadKarma and "ON" or "OFF")
+end
+
+-- Auto Lift Gamepass button
+liftGPButton.MouseButton1Click: function()
+    pcall(function()
+        local gpFolder = game.ReplicatedStorage:FindFirstChild("gamepassIds")
+        if not gpFolder then warn("No gamepassIds folder") return end
+        local owned = LP:FindFirstChild("ownedGamepasses") or Instance.new("Folder")
+        owned.Name = "ownedGamepasses"
+        owned.Parent = LP
+        for _, gp in pairs(gpFolder:GetChildren()) do
+            if gp:IsA("IntValue") then
+                local val = Instance.new("IntValue")
+                val.Name = gp.Name
+                val.Value = gp.Value
+                val.Parent = owned
+            end
+        end
+        print("Gamepasses lifted")
     end)
-end)
+end
+
+-- Follow Player
+followBtn.MouseButton1Click: function()
+    local name = followInput.Text
+    if name ~= "" then
+        targetPlayerName = name
+        spying = true
+        print("Following: " .. name)
+    end
+end
 
 -- Stop Following
-stopFollowButton.MouseButton1Click:Connect(function()
+stopFollowBtn.MouseButton1Click: function()
     spying = false
     workspace.CurrentCamera.CameraSubject = LP.Character and LP.Character:FindFirstChild("Humanoid") or LP
-end)
+    print("Stopped following")
+end
 
--- Main loops
+-- Main loop
 spawn(function()
-    while true do
-        wait(0.05)
+    local whitelist = {}
+    while true do wait(0.05)
         -- Auto Punch
         if autoPunch and getgenv().NexusRunning then
             pcall(function()
@@ -140,17 +200,17 @@ spawn(function()
                 end
                 if rightHand and leftHand then
                     for _, target in pairs(Players:GetPlayers()) do
-                        if target ~= LP and not playerWhitelist[target.Name] then
-                            local targetChar = target.Character
-                            if targetChar then
-                                local rootPart = targetChar:FindFirstChild("HumanoidRootPart")
-                                local humanoid = targetChar:FindFirstChild("Humanoid")
-                                if rootPart and humanoid and humanoid.Health > 0 then
+                        if target ~= LP and not whitelist[target.Name] then
+                            local tChar = target.Character
+                            if tChar then
+                                local root = tChar:FindFirstChild("HumanoidRootPart")
+                                local hum = tChar:FindFirstChild("Humanoid")
+                                if root and hum and hum.Health > 0 then
                                     pcall(function()
-                                        firetouchinterest(rightHand, rootPart, 1)
-                                        firetouchinterest(leftHand, rootPart, 1)
-                                        firetouchinterest(rightHand, rootPart, 0)
-                                        firetouchinterest(leftHand, rootPart, 0)
+                                        firetouchinterest(rightHand, root, 1)
+                                        firetouchinterest(leftHand, root, 1)
+                                        firetouchinterest(rightHand, root, 0)
+                                        firetouchinterest(leftHand, root, 0)
                                     end)
                                 end
                             end
@@ -160,20 +220,64 @@ spawn(function()
             end
         end
 
-        -- Follow Player if active
+        -- Follow target
         if spying and targetPlayerName then
-            local targetPlayer = Players:FindFirstChild(targetPlayerName)
-            if targetPlayer and targetPlayer.Character then
-                local targetHRP = getHRP(targetPlayer.Character)
+            local target = Players:FindFirstChild(targetPlayerName)
+            if target and target.Character then
+                local targetHRP = getHRP(target.Character)
                 local myChar = LP.Character
                 local myHRP = getHRP(myChar)
                 if targetHRP and myHRP then
-                    local newCFrame = targetHRP.CFrame * CFrame.new(0, 0, -3)
-                    myHRP.CFrame = newCFrame
+                    myHRP.CFrame = targetHRP.CFrame * CFrame.new(0, 0, -3)
+                end
+            end
+        end
+
+        -- Auto Karma logic (auto touch interactions)
+        if autoGoodKarma then
+            for _, target in pairs(Players:GetPlayers()) do
+                if target ~= LP and target.Character then
+                    local evilKarma = target.Character:FindFirstChild("evilKarma")
+                    local goodKarma = target.Character:FindFirstChild("goodKarma")
+                    if evilKarma and goodKarma then
+                        if evilKarma.Value > goodKarma.Value then
+                            local root = target.Character:FindFirstChild("HumanoidRootPart")
+                            local rightHand = LP.Character and LP.Character:FindFirstChild("RightHand")
+                            local leftHand = LP.Character and LP.Character:FindFirstChild("LeftHand")
+                            if root and rightHand and leftHand then
+                                firetouchinterest(rightHand, root, 1)
+                                firetouchinterest(leftHand, root, 1)
+                                firetouchinterest(rightHand, root, 0)
+                                firetouchinterest(leftHand, root, 0)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        if autoBadKarma then
+            for _, target in pairs(Players:GetPlayers()) do
+                if target ~= LP and target.Character then
+                    local evilKarma = target.Character:FindFirstChild("evilKarma")
+                    local goodKarma = target.Character:FindFirstChild("goodKarma")
+                    if evilKarma and goodKarma then
+                        if goodKarma.Value > evilKarma.Value then
+                            local root = target.Character:FindFirstChild("HumanoidRootPart")
+                            local rightHand = LP.Character and LP.Character:FindFirstChild("RightHand")
+                            local leftHand = LP.Character and LP.Character:FindFirstChild("LeftHand")
+                            if root and rightHand and leftHand then
+                                firetouchinterest(rightHand, root, 1)
+                                firetouchinterest(leftHand, root, 1)
+                                firetouchinterest(rightHand, root, 0)
+                                firetouchinterest(leftHand, root, 0)
+                            end
+                        end
+                    end
                 end
             end
         end
     end
 end)
 
-print("UI loaded. Use the buttons and toggles.")
+print("All features are active.")
