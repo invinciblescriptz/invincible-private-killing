@@ -22,6 +22,7 @@ local tabInfo = window:AddTab("Information")
 local tabMain = window:AddTab("Main")
 local tabTeleport = window:AddTab("Teleport")
 local tabRebirth = window:AddTab("Rebirth")
+-- Removed the "Kill" tab
 
 -- Info tab content
 tabInfo:AddLabel("Invincible likes Ninja Turtles").TextSize = 24
@@ -30,7 +31,7 @@ tabInfo:AddLabel("More features coming 🔜").TextSize = 22
 
 -- Services & Globals
 local Players = game:GetService("Players")
-local RS = game:GetService("ReplicatedStorage")
+local RS = game:GetService("RelocatedStorage")
 local WS = game:GetService("Workspace")
 local UIS = game:GetService("UserInputService")
 local Run = game:GetService("RunService")
@@ -97,7 +98,10 @@ local function startAutoRep(toolName, key)
             pcall(function()
                 local char = LP.Character
                 local h = char and char:FindFirstChildOfClass("Humanoid")
-                if not h or h.Health <= 0 then task.wait(2) return end
+                if not h or h.Health <= 0 then
+                    task.wait(2)
+                    return
+                end
                 safeEquip(toolName)
                 muscleEvent:FireServer("rep")
             end)
@@ -120,11 +124,16 @@ local function toggleInfiniteJump(enabled)
         jumpConn = UIS.JumpRequest:Connect(function()
             pcall(function()
                 local hum = LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-                if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+                if hum then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
             end)
         end)
     else
-        if jumpConn then jumpConn:Disconnect() jumpConn = nil end
+        if jumpConn then
+            jumpConn:Disconnect()
+            jumpConn = nil
+        end
     end
 end
 
@@ -141,7 +150,10 @@ local function toggleAntiAFK(enabled)
             end)
         end)
     else
-        if afkConn then afkConn:Disconnect() afkConn = nil end
+        if afkConn then
+            afkConn:Disconnect()
+            afkConn = nil
+        end
     end
 end
 
@@ -152,15 +164,15 @@ task.spawn(function()
             pcall(function()
                 local char = LP.Character
                 local h = char and char:FindFirstChildOfClass("Humanoid")
-                if not h or h.Health <= 0 then task.wait(1.5) return end
+                if not h or h.Health <= 0 then task.wait(1.4) return end
 
                 local durVal = LP:FindFirstChild("Durability")
                 if not durVal or durVal.Value < getgenv().selectedRockDurability then
-                    task.wait(0.8) return
+                    task.wait(0.6)
+                    return
                 end
 
                 safeEquip("Punch")
-
                 local folder = WS:FindFirstChild("machinesFolder")
                 if folder then
                     for _, obj in ipairs(folder:GetDescendants()) do
@@ -185,8 +197,7 @@ task.spawn(function()
     end
 end)
 
--- ====================
--- Main Tab Controls
+-- ==================== -- Main Tab Controls
 local toolsFolder = tabMain:AddFolder("Tools")
 local rockFarmFolder = tabMain:AddFolder("Rock Farm")
 
@@ -280,7 +291,7 @@ local rockFarmOptions = {
     {"Farm Eternal Gym Rock (750k)", 750000},
     {"Farm Legend Gym Rock (1M)", 1000000},
     {"Farm Muscle King Gym Rock (5M)", 5000000},
-    {"Farm Ancient Jungle Rock (10M)", 10000000}
+    {"Farm Ancient Jungle Rock (10M)", 10000000},
 }
 
 for _, option in ipairs(rockFarmOptions) do
@@ -293,7 +304,7 @@ rockFarmFolder:AddButton("Stop All Rock Farming", function()
     getgenv().selectedRockDurability = 0
 end)
 
--- Rock Farming Loop (additional bug fix)
+-- Additional Bug Fix in Rock Farming Loop
 task.spawn(function()
     while getgenv().NexusRunning do
         if getgenv().rockFarmActive and getgenv().selectedRockDurability > 0 then
@@ -342,13 +353,10 @@ task.spawn(function()
     end
 end)
 
--- ====================
--- Rebirth Tab Controls
-
+-- ==================== -- Rebirth Tab Controls
 local autoRebirth = false
 local autoSize = false
 
--- Auto Rebirth
 tabRebirth:AddSwitch("Auto Rebirth (Infinite)", function(val)
     autoRebirth = val
     if val then
@@ -363,7 +371,6 @@ tabRebirth:AddSwitch("Auto Rebirth (Infinite)", function(val)
     end
 end)
 
--- Auto Size
 tabRebirth:AddSwitch("Auto Size 1", function(val)
     autoSize = val
     if val then
@@ -428,7 +435,7 @@ tabRebirth:AddSwitch("Fast Rebirth Pack Farm", function(v)
                     end
 
                     while leader.Strength.Value < need do
-                        for _=1,12 do muscleEvent:FireServer("rep") end
+                        for _ = 1, 12 do muscleEvent:FireServer("rep") end
                         task.wait(0.05)
                     end
 
@@ -528,355 +535,32 @@ tabRebirth:AddSwitch("Lock Position", function(en)
     end
 end)
 
--- ========================
--- Killer Tab Features
--- ========================
-
-local AutoGoodKarma = false
-local AutoBadKarma = false
-local playerWhitelist = {}
-local SelectedTarget = nil
-local spying = false
-local ViewTargetName = nil
-
-local function updateTargetDropdown()
-    local options = {}
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LP then
-            table.insert(options, player.DisplayName)
-        end
-    end
-    -- Clear existing and add new options
-    viewDropdown:Clear()
-    for _, name in ipairs(options) do
-        viewDropdown:Add(name)
-    end
-end
-
--- Auto Good Karma
-local killTab = window:AddTab("Kill")
-killTab:AddSwitch("Auto Good Karma", function(state)
-    AutoGoodKarma = state
-    task.spawn(function()
-        while AutoGoodKarma do
-            local char = LP.Character
-            local rightHand = char and char:FindFirstChild("RightHand")
-            local leftHand = char and char:FindFirstChild("LeftHand")
-            if char and rightHand and leftHand then
-                for _, target in ipairs(Players:GetPlayers()) do
-                    if target ~= LP then
-                        local evilKarma = target:FindFirstChild("evilKarma")
-                        local goodKarma = target:FindFirstChild("goodKarma")
-                        if evilKarma and goodKarma and evilKarma:IsA("IntValue") and goodKarma:IsA("IntValue") then
-                            if evilKarma.Value > goodKarma.Value then
-                                local rootPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-                                if rootPart then
-                                    firetouchinterest(rightHand, rootPart, 1)
-                                    firetouchinterest(leftHand, rootPart, 1)
-                                    firetouchinterest(rightHand, rootPart, 0)
-                                    firetouchinterest(leftHand, rootPart, 0)
-                                end
-                            end
+-- ======================== -- Updated "Auto Punch (Fast)" Feature
+toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
+    states.FastPunch = s
+    if s then
+        task.spawn(function()
+            while states.FastPunch and getgenv().NexusRunning do
+                pcall(function()
+                    if muscleEvent then
+                        muscleEvent:FireServer("punch", "rightHand")
+                        muscleEvent:FireServer("punch", "leftHand")
+                    end
+                    local char = LP.Character
+                    if char then
+                        local punch = char:FindFirstChild("Punch") or LP.Backpack:FindFirstChild("Punch")
+                        if punch and punch.Parent ~= char then
+                            char.Humanoid:EquipTool(punch)
+                        end
+                        if punch and punch.Parent == char then
+                            local atk = punch:FindFirstChild("attackTime")
+                            if atk and atk:IsA("NumberValue") then atk.Value = 0.01 end
+                            punch:Activate()
                         end
                     end
-                end
-            end
-            task.wait(0.01)
-        end
-    end)
-end)
-
--- Auto Bad Karma
-killTab:AddSwitch("Auto Bad Karma", function(state)
-    AutoBadKarma = state
-    task.spawn(function()
-        while AutoBadKarma do
-            local char = LP.Character
-            local rightHand = char and char:FindFirstChild("RightHand")
-            local leftHand = char and char:FindFirstChild("LeftHand")
-            if char and rightHand and leftHand then
-                for _, target in ipairs(Players:GetPlayers()) do
-                    if target ~= LP then
-                        local evilKarma = target:FindFirstChild("evilKarma")
-                        local goodKarma = target:FindFirstChild("goodKarma")
-                        if evilKarma and goodKarma and evilKarma:IsA("IntValue") and goodKarma:IsA("IntValue") then
-                            if goodKarma.Value > evilKarma.Value then
-                                local rootPart = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
-                                if rootPart then
-                                    firetouchinterest(rightHand, rootPart, 1)
-                                    firetouchinterest(leftHand, rootPart, 1)
-                                    firetouchinterest(rightHand, rootPart, 0)
-                                    firetouchinterest(leftHand, rootPart, 0)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            task.wait(0.01)
-        end
-    end)
-end)
-
--- Auto Whitelist friends
-local function setupWhitelist(state)
-    if state then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LP and LP:IsFriendsWith(player.UserId) then
-                playerWhitelist[player.Name] = true
-            end
-        end
-        Players.PlayerAdded:Connect(function(player)
-            if LP:IsFriendsWith(player.UserId) then
-                playerWhitelist[player.Name] = true
+                end)
+                task.wait(0.085)
             end
         end)
-    else
-        for k in pairs(playerWhitelist) do
-            playerWhitelist[k] = nil
-        end
-    end
-end
-
-killTab:AddSwitch("Auto Whitelist Friends", function(state)
-    setupWhitelist(state)
-end)
-
-killTab:AddTextBox("Whitelist", function(text)
-    local target = Players:FindFirstChild(text)
-    if target then
-        playerWhitelist[target.Name] = true
     end
 end)
-
-killTab:AddTextBox("UnWhitelist", function(text)
-    local target = Players:FindFirstChild(text)
-    if target then
-        playerWhitelist[target.Name] = nil
-    end
-end)
-
--- Auto Kill (loop)
-local autoKill = false
-killTab:AddSwitch("Auto Kill", function(state)
-    autoKill = state
-    task.spawn(function()
-        while autoKill do
-            local char = LP.Character or LP.CharacterAdded:Wait()
-            local rightHand = char and char:FindFirstChild("RightHand")
-            local leftHand = char and char:FindFirstChild("LeftHand")
-            local punch = LP.Backpack:FindFirstChild("Punch")
-            if punch and not char:FindFirstChild("Punch") then
-                punch.Parent = char
-            end
-            if rightHand and leftHand then
-                for _, target in ipairs(Players:GetPlayers()) do
-                    if target ~= LP and not playerWhitelist[target.Name] then
-                        local targetChar = target.Character
-                        local rootPart = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-                        local humanoid = targetChar and targetChar:FindFirstChild("Humanoid")
-                        if rootPart and humanoid and humanoid.Health > 0 then
-                            pcall(function()
-                                firetouchinterest(rightHand, rootPart, 1)
-                                firetouchinterest(leftHand, rootPart, 1)
-                                firetouchinterest(rightHand, rootPart, 0)
-                                firetouchinterest(leftHand, rootPart, 0)
-                            end)
-                        end
-                    end
-                end
-            end
-            task.wait(0.05)
-        end
-    end)
-end)
-
--- Targeting specific player
-local targetPlayerNames = {}
-local targetDropdown = killTab:AddDropdown("Select Target", function(displayName)
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.DisplayName == displayName then
-            if not table.find(targetPlayerNames, player.Name) then
-                table.insert(targetPlayerNames, player.Name)
-            end
-            -- Save as selected target
-            SelectedTarget = player.Name
-            break
-        end
-    end
-end)
-
-local function updateTargetDropdown()
-    local options = {}
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LP then
-            table.insert(options, player.DisplayName)
-        end
-    end
-    -- Clear existing options
-    targetDropdown:Clear()
-    for _, name in ipairs(options) do
-        targetDropdown:Add(name)
-    end
-end
-
--- Refresh listener for player list
-Players.PlayerAdded:Connect(function()
-    updateTargetDropdown()
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    updateTargetDropdown()
-    -- Remove from target list if present
-    for i = #targetPlayerNames, 1, -1 do
-        if targetPlayerNames[i] == player.Name then
-            table.remove(targetPlayerNames, i)
-        end
-    end
-end)
-
-local killTargetActive = false
-killTab:AddSwitch("Start Kill Target", function(state)
-    killTargetActive = state
-    task.spawn(function()
-        while killTargetActive do
-            local char = LP.Character or LP.CharacterAdded:Wait()
-            local rightHand = char and char:FindFirstChild("RightHand")
-            local leftHand = char and char:FindFirstChild("LeftHand")
-            local punch = LP.Backpack:FindFirstChild("Punch")
-            if punch and not char:FindFirstChild("Punch") then
-                punch.Parent = char
-            end
-            if rightHand and leftHand then
-                for _, name in ipairs(targetPlayerNames) do
-                    local target = Players:FindFirstChild(name)
-                    if target and target ~= LP and target.Character then
-                        local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
-                        if rootPart then
-                            pcall(function()
-                                firetouchinterest(rightHand, rootPart, 1)
-                                firetouchinterest(leftHand, rootPart, 1)
-                                firetouchinterest(rightHand, rootPart, 0)
-                                firetouchinterest(leftHand, rootPart, 0)
-                            end)
-                        end
-                    end
-                end
-            end
-            task.wait(0.05)
-        end
-    end)
-end)
-
--- View & follow players
-local ViewDropdownItems = {}
-local ViewTargetName = nil
-local spying = false
-
-local viewDropdown = killTab:AddDropdown("Select View Target", function(value)
-    ViewTargetName = value
-end)
-
--- Populate dropdown initially
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LP then
-        viewDropdown:Add(player.DisplayName)
-        ViewDropdownItems[player.Name] = player.DisplayName
-    end
-end
-
--- Update dropdown on player join/leave
-Players.PlayerAdded:Connect(function(player)
-    if player ~= LP then
-        viewDropdown:Add(player.DisplayName)
-        ViewDropdownItems[player.Name] = player.DisplayName
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    if player ~= LP then
-        ViewDropdownItems[player.Name] = nil
-        -- Rebuild dropdown options
-        local options = {}
-        for _, display in pairs(ViewDropdownItems) do
-            table.insert(options, display)
-        end
-        viewDropdown:Clear()
-        for _, displayName in ipairs(options) do
-            viewDropdown:Add(displayName)
-        end
-    end
-end)
-
--- Follow selected target
-local function followPlayer(target)
-    local myChar = LP.Character
-    local targetChar = target.Character
-    if not (myChar and targetChar) then return end
-    local myHRP = myChar:FindFirstChild("HumanoidRootPart")
-    local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
-    if myHRP and targetHRP then
-        local followPos = targetHRP.Position - (targetHRP.CFrame.LookVector * 3)
-        myHRP.CFrame = CFrame.new(followPos, targetHRP.Position)
-    end
-end
-
-local following = false
-local followTarget = nil
-
-killTab:AddSwitch("View Player", function(state)
-    spying = state
-    if not spying then
-        local cam = workspace.CurrentCamera
-        cam.CameraSubject = LP.Character and LP.Character:FindFirstChild("Humanoid") or LP
-        return
-    end
-    task.spawn(function()
-        while spying do
-            local target = Players:FindFirstChild(ViewTargetName)
-            if target and target ~= LP then
-                local humanoid = target.Character and target.Character:FindFirstChild("Humanoid")
-                if humanoid then
-                    workspace.CurrentCamera.CameraSubject = humanoid
-                end
-            end
-            task.wait(0.1)
-        end
-    end)
-end)
-
--- Button to stop following
-killTab:AddButton("Stop Following", function()
-    spying = false
-    print("Stopped following")
-end)
-
--- Auto follow loop
-task.spawn(function()
-    while true do
-        task.wait(0.01)
-        if spying and ViewTargetName then
-            local target = Players:FindFirstChild(ViewTargetName)
-            if target then
-                followPlayer(target)
-            end
-        end
-    end
-end)
-
--- Remove punch animation
-killTab:AddButton("Remove Punch Anim", function()
-    local character = LP.Character
-    if character and character:FindFirstChild("Humanoid") then
-        local humanoid = character:FindFirstChild("Humanoid")
-        if humanoid then
-            for _, track in pairs(humanoid:GetPlayingAnimationTracks()) do
-                if track.Animation and (track.Animation.AnimationId == "rbxassetid://3638729053" or track.Animation.AnimationId == "rbxassetid://3638767427") then
-                    track:Stop()
-                end
-            end
-        end
-    end
-end)
-
--- End of script
