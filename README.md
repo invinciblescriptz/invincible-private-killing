@@ -1,4 +1,4 @@
--- Full feature-rich GUI with draggable functionality
+-- Make sure this is a LocalScript inside StarterPlayerScripts or StarterCharacterScripts
 
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -49,7 +49,7 @@ title.TextSize = 20
 
 local yOffset = 60
 
--- Helper functions to create buttons and inputs
+-- Helper function to create buttons
 local function createButton(text, yPos)
     local btn = Instance.new("TextButton", frame)
     btn.Size = UDim2.new(0, 300, 0, 40)
@@ -60,6 +60,7 @@ local function createButton(text, yPos)
     return btn
 end
 
+-- Helper function to create inputs
 local function createInput(placeholder, yPos)
     local input = Instance.new("TextBox", frame)
     input.Size = UDim2.new(0, 250, 0, 40)
@@ -71,8 +72,7 @@ local function createInput(placeholder, yPos)
     return input
 end
 
--- Placeholder for tab and other GUI elements (assuming you have your GUI library)
--- For simplicity, I'll create a main container for 'Kill' tab features
+-- Main container for 'Kill' tab features
 local KillTabFrame = Instance.new("Frame", frame)
 KillTabFrame.Size = UDim2.new(1, -40, 1, -70)
 KillTabFrame.Position = UDim2.new(0, 20, 0, 70)
@@ -124,7 +124,6 @@ local function addDropdown(parent, text, callback)
     label.Font = Enum.Font.SourceSans
     label.TextSize = 14
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.PaddingLeft = 5
 
     local button = Instance.new("TextButton", dropdownFrame)
     button.Size = UDim2.new(1, 0, 1, 0)
@@ -186,7 +185,7 @@ y = y + 25
 -- Dropdown for selecting pet
 local petDropdown = addDropdown(KillTabFrame, "Select Pet", function(selected)
     -- Your pet equip logic here
-    local petsFolder = game.Players.LocalPlayer.petsFolder
+    local petsFolder = game.Players.LocalPlayer:WaitForChild("petsFolder")
     for _, folder in pairs(petsFolder:GetChildren()) do
         if folder:IsA("Folder") then
             for _, pet in pairs(folder:GetChildren()) do
@@ -196,7 +195,7 @@ local petDropdown = addDropdown(KillTabFrame, "Select Pet", function(selected)
     end
     task.wait(0.2)
     local petsToEquip = {}
-    for _, pet in pairs(game.Players.LocalPlayer.petsFolder.Unique:GetChildren()) do
+    for _, pet in pairs(game.Players.LocalPlayer.petsFolder:WaitForChild("Unique"):GetChildren()) do
         if pet.Name == selected then
             table.insert(petsToEquip, pet)
         end
@@ -211,6 +210,13 @@ end)
 y = y + 35
 
 -- Add switches
+local autoGoodKarma = false
+local autoBadKarma = false
+local autoKill = false
+local autoEquipPunch = false
+local autoPunchNoAnim = false
+local _G = _G or {}
+
 local autoGoodKarmaSwitch = addSwitch(KillTabFrame, "Auto Good Karma", function(state)
     autoGoodKarma = state
     if state then
@@ -279,7 +285,6 @@ local autoBadKarmaSwitch = addSwitch(KillTabFrame, "Auto Bad Karma", function(st
 end)
 y = y + 40
 
--- Auto whitelist friends
 local playerWhitelist = {}
 local friendWhitelistActive = false
 
@@ -307,7 +312,6 @@ local whitelistSwitch = addSwitch(KillTabFrame, "Auto Whitelist Friends", functi
 end)
 y = y + 40
 
--- Whitelist and UnWhitelist text boxes
 local whitelistInput = createInput("Whitelist", y)
 whitelistInput.FocusLost:Connect(function()
     local target = game.Players:FindFirstChild(whitelistInput.Text)
@@ -326,7 +330,6 @@ unWhitelistInput.FocusLost:Connect(function()
 end)
 y = y + 45
 
--- Auto Kill
 local autoKillSwitch = addSwitch(KillTabFrame, "Auto Kill", function(state)
     autoKill = state
     if state then
@@ -367,7 +370,7 @@ local targetPlayerNames = {}
 local selectedTarget = nil
 
 local function updateTargetDropdown()
-    -- You can implement dynamic dropdown updates if needed
+    -- optional, implement if needed
 end
 
 local targetDropdown = addDropdown(KillTabFrame, "Select Target", function(displayName)
@@ -392,11 +395,6 @@ game.Players.PlayerAdded:Connect(function(player)
         targetDropdown.Add(player.DisplayName)
         table.insert(targetPlayerNames, player.Name)
     end
-end)
-
-game.Players.PlayerRemoving:Connect(function(player)
-    -- Remove from list if needed
-    -- (You can enhance this to remove from dropdown)
 end)
 
 -- Start kill target toggle
@@ -449,7 +447,7 @@ local spying = false
 local function followPlayer(targetPlayer)
     local myChar = game.Players.LocalPlayer.Character
     local targetChar = targetPlayer.Character
-    if not myChar or not targetChar then return end
+    if not (myChar and targetChar) then return end
     local myHRP = myChar:FindFirstChild("HumanoidRootPart")
     local targetHRP = targetChar:FindFirstChild("HumanoidRootPart")
     if myHRP and targetHRP then
@@ -636,7 +634,6 @@ y = y + 40
 local following = false
 local followTarget = nil
 
--- Function to follow a player
 local function followPlayer(targetPlayer)
     local myChar = game.Players.LocalPlayer.Character
     local targetChar = targetPlayer.Character
@@ -649,9 +646,9 @@ local function followPlayer(targetPlayer)
     end
 end
 
-local followDropdown = addDropdown(KillTabFrame, "Teleport player", function(selectedDisplayName)
+local followDropdown = addDropdown(KillTabFrame, "Teleport player", function(displayName)
     for _, plr in ipairs(game.Players:GetPlayers()) do
-        if plr.DisplayName == selectedDisplayName then
+        if plr.DisplayName == displayName then
             followTarget = plr
             following = true
             -- Immediate follow
@@ -662,7 +659,7 @@ local followDropdown = addDropdown(KillTabFrame, "Teleport player", function(sel
     end
 end)
 
--- Populate initial players
+-- Populate initial
 for _, player in ipairs(game.Players:GetPlayers()) do
     if player ~= game.Players.LocalPlayer then
         followDropdown.Add(player.DisplayName)
@@ -683,24 +680,25 @@ game.Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Button to stop following
-local stopFollowBtn = createButton("Dejar de Seguir", y)
-stopFollowBtn.MouseButton1Click:Connect(function()
-    following = false
-    followTarget = nil
-    print("⛔ Stopped following")
-end)
-y = y + 45
-
--- Loop for auto-follow
-task.spawn(function()
+local function followPlayerLoop()
     while true do
         if following and followTarget then
             followPlayer(followTarget)
         end
         task.wait(0.01)
     end
-end)
+end
+task.spawn(followPlayerLoop)
+
+local function stopFollowing()
+    following = false
+    followTarget = nil
+    print("⛔ Stopped following")
+end
+
+local stopFollowBtn = createButton("Dejar de Seguir", y)
+stopFollowBtn.MouseButton1Click:Connect(stopFollowing)
+y = y + 45
 
 -- Re-follow after respawn
 game.Players.LocalPlayer.CharacterAdded:Connect(function()
@@ -710,7 +708,7 @@ game.Players.LocalPlayer.CharacterAdded:Connect(function()
     end
 end)
 
--- Auto Slams (auto ground slam)
+-- Auto Slams
 local autoSlam = false
 local slamSwitch = addSwitch(KillTabFrame, "auto slams", function(state)
     autoSlam = state
@@ -736,7 +734,7 @@ local slamSwitch = addSwitch(KillTabFrame, "auto slams", function(state)
 end)
 y = y + 40
 
--- "Combo NaN" button (execute raw URL scripts)
+-- "Combo NaN" button to run external scripts
 local crackUrls = {
     "https://raw.githubusercontent.com/SadOz8/Stuffs/refs/heads/main/Crack",
     "https://raw.githubusercontent.com/SadOz8/Stuffs/refs/heads/main/Crack2",
@@ -762,16 +760,6 @@ local function runCracks()
             end
         end)
     end
-end
-
-local function createButton(text, yPos)
-    local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0, 300, 0, 40)
-    btn.Position = UDim2.new(0, 20, 0, yPos)
-    btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    return btn
 end
 
 local crackBtn = createButton("Touch Me!", y)
