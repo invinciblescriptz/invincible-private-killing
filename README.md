@@ -17,7 +17,7 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = { Enabled = false }
 })
 
-local Killer = Window:CreateTab("Kill", 4483362458)  -- You can change the icon ID
+local Killer = Window:CreateTab("Kill", 4483362458) -- You can change the icon ID
 
 -- Variables
 local playerWhitelist = {}
@@ -26,8 +26,6 @@ local following = false
 local followTarget = nil
 local autoGoodKarma = false
 local autoBadKarma = false
-
--- Draggable Frame (if you want custom frame, but Rayfield already has its own nice GUI)
 
 -- Pet Selector
 Killer:CreateLabel("Select Pet (Damage / Durability)")
@@ -101,7 +99,7 @@ Killer:CreateToggle({
     end,
 })
 
--- Auto Bad Karma (similar toggle - copy the structure above and change condition to good.Value > evil.Value)
+-- Auto Bad Karma
 Killer:CreateToggle({
     Name = "Auto Bad Karma",
     CurrentValue = false,
@@ -156,7 +154,7 @@ Killer:CreateToggle({
     end,
 })
 
--- Auto Punch No Animation (Most Reliable in 2026)
+-- Auto Punch No Animation
 Killer:CreateToggle({
     Name = "Auto Punch [No Animation - OP]",
     CurrentValue = false,
@@ -199,7 +197,10 @@ Killer:CreateToggle({
 Killer:CreateButton({
     Name = "Remove Punch Animation",
     Callback = function()
-        local blocked = {["rbxassetid://3638729053"] = true, ["rbxassetid://3638767427"] = true}
+        local blocked = {
+            ["rbxassetid://3638729053"] = true,
+            ["rbxassetid://3638767427"] = true
+        }
         local function blockAnims(char)
             local hum = char:FindFirstChild("Humanoid")
             if hum then
@@ -256,7 +257,7 @@ Killer:CreateToggle({
     end,
 })
 
--- Combo NaN
+-- Combo NaN (Size Glitch)
 Killer:CreateButton({
     Name = "Combo NaN (Size Glitch)",
     Callback = function()
@@ -283,15 +284,18 @@ local followDropdown = Killer:CreateDropdown({
 })
 
 -- Populate follow dropdown
-for _, plr in ipairs(Players:GetPlayers()) do
-    if plr ~= LocalPlayer then
-        followDropdown:Add(plr.DisplayName)
+local function updateFollowOptions()
+    followDropdown:Clear()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            followDropdown:Add(plr.DisplayName)
+        end
     end
 end
 
-Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then followDropdown:Add(plr.DisplayName) end
-end)
+Players.PlayerAdded:Connect(updateFollowOptions)
+Players.PlayerRemoving:Connect(updateFollowOptions)
+updateFollowOptions()
 
 Killer:CreateButton({
     Name = "Stop Following",
@@ -303,7 +307,7 @@ Killer:CreateButton({
 
 -- Follow Loop
 task.spawn(function()
-    while task.wait(0.03) do
+    while true do
         if following and followTarget then
             local target = Players:FindFirstChild(followTarget)
             local myChar = LocalPlayer.Character
@@ -317,11 +321,14 @@ task.spawn(function()
                 end
             end
         end
+        task.wait(0.03)
     end
 end)
 
 -- Time Changer
-local times = {"Morning","Noon","Afternoon","Sunset","Night","Midnight","Dawn","Early Morning"}
+local times = {
+    "Morning", "Noon", "Afternoon", "Sunset", "Night", "Midnight", "Dawn", "Early Morning"
+}
 Killer:CreateDropdown({
     Name = "Change Time",
     Options = times,
@@ -329,11 +336,46 @@ Killer:CreateDropdown({
     MultipleOptions = false,
     Callback = function(sel)
         sel = sel[1] or sel
-        Lighting.Brightness = 2
-        Lighting.FogEnd = 100000
-        if sel == "Morning" then Lighting.ClockTime = 6 Lighting.Ambient = Color3.fromRGB(200,200,255)
-        elseif sel == "Noon" then Lighting.ClockTime = 12 Lighting.Brightness = 3 Lighting.Ambient = Color3.fromRGB(255,255,255)
-        -- ... (add the rest of the conditions from previous version)
+        if sel == "Morning" then
+            Lighting.ClockTime = 6
+            Lighting.Brightness = 2
+            Lighting.Ambient = Color3.fromRGB(200, 200, 255)
+            Lighting.FogEnd = 100000
+        elseif sel == "Noon" then
+            Lighting.ClockTime = 12
+            Lighting.Brightness = 3
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.FogEnd = 100000
+        elseif sel == "Afternoon" then
+            Lighting.ClockTime = 15
+            Lighting.Brightness = 2
+            Lighting.Ambient = Color3.fromRGB(255, 200, 100)
+            Lighting.FogEnd = 100000
+        elseif sel == "Sunset" then
+            Lighting.ClockTime = 18
+            Lighting.Brightness = 1.5
+            Lighting.Ambient = Color3.fromRGB(255, 100, 50)
+            Lighting.FogEnd = 100000
+        elseif sel == "Night" then
+            Lighting.ClockTime = 21
+            Lighting.Brightness = 0.5
+            Lighting.Ambient = Color3.fromRGB(50, 50, 50)
+            Lighting.FogEnd = 500
+        elseif sel == "Midnight" then
+            Lighting.ClockTime = 0
+            Lighting.Brightness = 0.2
+            Lighting.Ambient = Color3.fromRGB(20, 20, 20)
+            Lighting.FogEnd = 300
+        elseif sel == "Dawn" then
+            Lighting.ClockTime = 5
+            Lighting.Brightness = 1
+            Lighting.Ambient = Color3.fromRGB(255, 200, 150)
+            Lighting.FogEnd = 100000
+        elseif sel == "Early Morning" then
+            Lighting.ClockTime = 4
+            Lighting.Brightness = 1.2
+            Lighting.Ambient = Color3.fromRGB(255, 255, 200)
+            Lighting.FogEnd = 100000
         end
     end,
 })
