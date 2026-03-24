@@ -7,15 +7,24 @@ local MainWindow = ScriptLibrary:AddWindow(string.format("invincible private kil
 
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
+local workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local VirtualUser = game:GetService("VirtualUser")
+local UserInputService = game:GetService("UserInputService")
 
-local window = MainWindow -- Adjusted for consistency
+local window = MainWindow
+
+-- Reference to muscleEvent (make sure this exists in your game)
+local muscleEvent = game:GetService("ReplicatedStorage"):WaitForChild("muscleEvent") -- Adjust if different
 
 -- Anti AFK
+local antiAfkConn
+local states = {}
 local function toggleAntiAfk(state)
     states.AntiAFK = state
     if state then
         if antiAfkConn then return end
-        antiAfkConn = LocalPlayer.Idled:Connect(function()
+        antiAfkConn = LP.Idled:Connect(function()
             pcall(function()
                 VirtualUser:CaptureController()
                 VirtualUser:ClickButton2(Vector2.new())
@@ -192,11 +201,10 @@ local function updateTargetDropdown()
     end
 end
 
--- Refresh player list dynamically
 Players.PlayerAdded:Connect(function()
     updateTargetDropdown()
 end)
-Players.PlayerRemoving:Connect(function()
+Players.PlayerRemoving:Connect(function(player)
     updateTargetDropdown()
     -- Remove from target list if present
     for i = #targetPlayerNames, 1, -1 do
@@ -348,8 +356,6 @@ Kill:AddButton("Remove Punch Anim", function()
     end
 end)
 
--- Additional features like changing size, time, etc., can be added similarly.
-
 -- ========================
 -- END: All "Killer" tab features are now added.
 -- ========================
@@ -362,13 +368,16 @@ local function toggleFastPunch(s)
         task.spawn(function()
             while states.FastPunch do
                 pcall(function()
+                    print("Fast Punch: firing") -- Debug
                     if muscleEvent then
                         muscleEvent:FireServer("punch", "rightHand")
                         muscleEvent:FireServer("punch", "leftHand")
+                    else
+                        warn("muscleEvent not found")
                     end
-                    local char = LocalPlayer.Character
+                    local char = LP.Character
                     if char then
-                        local punch = char:FindFirstChild("Punch") or LocalPlayer.Backpack:FindFirstChild("Punch")
+                        local punch = char:FindFirstChild("Punch") or LP.Backpack:FindFirstChild("Punch")
                         if punch and punch.Parent ~= char then
                             -- Equip the punch tool
                             char.Humanoid:EquipTool(punch)
@@ -386,12 +395,38 @@ local function toggleFastPunch(s)
     end
 end
 
--- Replace your existing toggle function with this
 killmethodTab:AddSwitch("Fast Punch", toggleFastPunch)
 
-local Lighting = game:GetService("Lighting")
+-- Auto Slam
+local autoSlamActive = false
+killmethodTab:AddSwitch("auto slams", function(state)
+    autoSlamActive = state
+    if state then
+        task.spawn(function()
+            while autoSlamActive do
+                print("Auto Slam: attempting") -- Debug
+                local player = LP
+                local groundSlam = player.Backpack:FindFirstChild("Ground Slam") or (player.Character and player.Character:FindFirstChild("Ground Slam"))
+                if groundSlam then
+                    if groundSlam.Parent == player.Backpack then
+                        groundSlam.Parent = player.Character
+                    end
+                    if groundSlam:FindFirstChild("attackTime") then
+                        groundSlam.attackTime.Value = 0
+                    end
+                    print("Firing slam event") -- Debug
+                    player.muscleEvent:FireServer("slam")
+                    groundSlam:Activate()
+                else
+                    warn("Ground Slam not found")
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
 
--- Tabla para registrar los tiempos disponibles
+-- Dropdown for time change
 local timeOptions = {
     "Morning",
     "Noon",
@@ -403,39 +438,8 @@ local timeOptions = {
     "Early Morning"
 }
 
-killmethodTab:AddButton("nan kill", function()
-    local args = {"changeSize", 0/0}
-    game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer(unpack(args))
-end)
-
--- Auto Slam
-local autoSlamActive = false
-killmethodTab:AddSwitch("auto slams", function(state)
-    autoSlamActive = state
-    if state then
-        task.spawn(function()
-            while autoSlamActive do
-                local player = LocalPlayer
-                local groundSlam = player.Backpack:FindFirstChild("Ground Slam") or (player.Character and player.Character:FindFirstChild("Ground Slam"))
-                if groundSlam then
-                    if groundSlam.Parent == player.Backpack then
-                        groundSlam.Parent = player.Character
-                    end
-                    if groundSlam:FindFirstChild("attackTime") then
-                        groundSlam.attackTime.Value = 0
-                    end
-                    player.muscleEvent:FireServer("slam")
-                    groundSlam:Activate()
-                end
-                task.wait(0.1)
-            end
-        end)
-    end
-end)
-
--- Dropdown
-local timeDropdown = killmethodTab:AddDropdown("change time", function(selection)
-    -- Reset antes de aplicar
+local function changeTime(selection)
+    -- Reset
     Lighting.Brightness = 2
     Lighting.FogEnd = 100000
     Lighting.Ambient = Color3.fromRGB(127,127,127)
@@ -457,7 +461,7 @@ local timeDropdown = killmethodTab:AddDropdown("change time", function(selection
         Lighting.Brightness = 2
         Lighting.Ambient = Color3.fromRGB(255, 150, 100)
         Lighting.FogEnd = 500
-    elseif selection == "Nigth" then
+    elseif selection == "Night" then
         Lighting.ClockTime = 20
         Lighting.Brightness = 1.5
         Lighting.Ambient = Color3.fromRGB(100, 100, 150)
@@ -476,9 +480,9 @@ local timeDropdown = killmethodTab:AddDropdown("change time", function(selection
         Lighting.Brightness = 1.2
         Lighting.Ambient = Color3.fromRGB(100, 120, 180)
     end
-end)
+end
 
--- Agregar opciones al dropdown dinámicamente
+local timeDropdown = killmethodTab:AddDropdown("change time", changeTime)
 for _, option in ipairs(timeOptions) do
     timeDropdown:Add(option)
 end
