@@ -12,7 +12,7 @@ frame.BorderSizePixel = 0
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 50)
 title.BackgroundColor3 = Color3.fromRGB(0, 20, 0)
-title.TextColor3 = Color3.white
+title.TextColor3 = Color3.new(1, 1, 1)
 title.Text = "Invincible Private Killing"
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 20
@@ -25,7 +25,7 @@ punchToggle.Size = UDim2.new(0, 300, 0, 40)
 punchToggle.Position = UDim2.new(0, 20, 0, yOffset)
 punchToggle.Text = "Auto Punch (Fast): OFF"
 punchToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-punchToggle.TextColor3 = Color3.white
+punchToggle.TextColor3 = Color3.new(1, 1, 1)
 
 -- Toggle: Auto Kill
 local killToggle = Instance.new("TextButton", frame)
@@ -33,7 +33,7 @@ killToggle.Size = UDim2.new(0, 300, 0, 40)
 killToggle.Position = UDim2.new(0, 20, 0, yOffset + 50)
 killToggle.Text = "Auto Kill: OFF"
 killToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-killToggle.TextColor3 = Color3.white
+killToggle.TextColor3 = Color3.new(1, 1, 1)
 
 -- Toggle: Auto Good Karma
 local goodKarmaToggle = Instance.new("TextButton", frame)
@@ -41,7 +41,7 @@ goodKarmaToggle.Size = UDim2.new(0, 300, 0, 40)
 goodKarmaToggle.Position = UDim2.new(0, 20, 0, yOffset + 100)
 goodKarmaToggle.Text = "Auto Good Karma: OFF"
 goodKarmaToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-goodKarmaToggle.TextColor3 = Color3.white
+goodKarmaToggle.TextColor3 = Color3.new(1, 1, 1)
 
 -- Toggle: Auto Bad Karma
 local badKarmaToggle = Instance.new("TextButton", frame)
@@ -49,7 +49,7 @@ badKarmaToggle.Size = UDim2.new(0, 300, 0, 40)
 badKarmaToggle.Position = UDim2.new(0, 20, 0, yOffset + 150)
 badKarmaToggle.Text = "Auto Bad Karma: OFF"
 badKarmaToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-badKarmaToggle.TextColor3 = Color3.white
+badKarmaToggle.TextColor3 = Color3.new(1, 1, 1)
 
 -- Button: Auto Lift Gamepass
 local liftGPButton = Instance.new("TextButton", frame)
@@ -57,7 +57,7 @@ liftGPButton.Size = UDim2.new(0, 300, 0, 40)
 liftGPButton.Position = UDim2.new(0, 20, 0, yOffset + 200)
 liftGPButton.Text = "Auto Lift Gamepass"
 liftGPButton.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-liftGPButton.TextColor3 = Color3.white
+liftGPButton.TextColor3 = Color3.new(1,1,1)
 
 -- Input: Enter Player Name for Follow
 local followInput = Instance.new("TextBox", frame)
@@ -66,7 +66,7 @@ followInput.Position = UDim2.new(0, 350, 0, yOffset + 50)
 followInput.PlaceholderText = "Enter Player Name"
 followInput.Text = ""
 followInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-followInput.TextColor3 = Color3.white
+followInput.TextColor3 = Color3.new(1,1,1)
 
 -- Button: Follow Player
 local followBtn = Instance.new("TextButton", frame)
@@ -74,7 +74,7 @@ followBtn.Size = UDim2.new(0, 250, 0, 40)
 followBtn.Position = UDim2.new(0, 350, 0, yOffset + 100)
 followBtn.Text = "Follow Player"
 followBtn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-followBtn.TextColor3 = Color3.white
+followBtn.TextColor3 = Color3.new(1,1,1)
 
 -- Button: Stop Following
 local stopFollowBtn = Instance.new("TextButton", frame)
@@ -82,7 +82,7 @@ stopFollowBtn.Size = UDim2.new(0, 250, 0, 40)
 stopFollowBtn.Position = UDim2.new(0, 350, 0, yOffset + 150)
 stopFollowBtn.Text = "Stop Following"
 stopFollowBtn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-stopFollowBtn.TextColor3 = Color3.white
+stopFollowBtn.TextColor3 = Color3.new(1,1,1)
 
 -- Variables
 local autoPunch = false
@@ -105,28 +105,28 @@ local function getHRP(character)
 end
 
 -- Toggle handlers
-punchToggle.MouseButton1Click: function()
+punchToggle.MouseButton1Click:Connect(function()
     autoPunch = not autoPunch
     punchToggle.Text = "Auto Punch (Fast): " .. (autoPunch and "ON" or "OFF")
-end
+end)
 
-killToggle.MouseButton1Click: function()
+killToggle.MouseButton1Click:Connect(function()
     autoKill = not autoKill
     killToggle.Text = "Auto Kill: " .. (autoKill and "ON" or "OFF")
-end
+end)
 
-goodKarmaToggle.MouseButton1Click: function()
+goodKarmaToggle.MouseButton1Click:Connect(function()
     autoGoodKarma = not autoGoodKarma
     goodKarmaToggle.Text = "Auto Good Karma: " .. (autoGoodKarma and "ON" or "OFF")
-end
+end)
 
-badKarmaToggle.MouseButton1Click: function()
+badKarmaToggle.MouseButton1Click:Connect(function()
     autoBadKarma = not autoBadKarma
     badKarmaToggle.Text = "Auto Bad Karma: " .. (autoBadKarma and "ON" or "OFF")
-end
+end)
 
 -- Auto Lift Gamepass button
-liftGPButton.MouseButton1Click: function()
+liftGPButton.MouseButton1Click:Connect(function()
     pcall(function()
         local gpFolder = game.ReplicatedStorage:FindFirstChild("gamepassIds")
         if not gpFolder then warn("No gamepassIds folder") return end
@@ -143,31 +143,32 @@ liftGPButton.MouseButton1Click: function()
         end
         print("Gamepasses lifted")
     end)
-end
+end)
 
 -- Follow Player
-followBtn.MouseButton1Click: function()
+followBtn.MouseButton1Click:Connect(function()
     local name = followInput.Text
     if name ~= "" then
         targetPlayerName = name
         spying = true
         print("Following: " .. name)
     end
-end
+end)
 
 -- Stop Following
-stopFollowBtn.MouseButton1Click: function()
+stopFollowBtn.MouseButton1Click:Connect(function()
     spying = false
     workspace.CurrentCamera.CameraSubject = LP.Character and LP.Character:FindFirstChild("Humanoid") or LP
     print("Stopped following")
-end
+end)
 
 -- Main loop
 spawn(function()
-    local whitelist = {}
-    while true do wait(0.05)
+    while true do
+        wait(0.05)
+
         -- Auto Punch
-        if autoPunch and getgenv().NexusRunning then
+        if autoPunch and _G.NexusRunning then
             pcall(function()
                 if muscleEvent then
                     muscleEvent:FireServer("punch", "rightHand")
@@ -177,9 +178,9 @@ spawn(function()
                 if char then
                     local punch = char:FindFirstChild("Punch") or LP.Backpack:FindFirstChild("Punch")
                     if punch and punch.Parent ~= char then
-                        char.Humanoid:EquipTool(punch)
-                    end
-                    if punch and punch.Parent == char then
+                        punch.Parent = char
+                        punch:Activate()
+                    elseif punch and punch.Parent == char then
                         local atk = punch:FindFirstChild("attackTime")
                         if atk and atk:IsA("NumberValue") then atk.Value = 0.01 end
                         punch:Activate()
