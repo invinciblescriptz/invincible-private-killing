@@ -60,7 +60,7 @@ local function createButton(text, callback)
     btn.Size = UDim2.new(0, 300, 0, 40)
     btn.Position = UDim2.new(0, 20, 0, yOffset)
     btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red color
     btn.TextColor3 = Color3.new(1, 1, 1)
     yOffset = yOffset + 45
     btn.MouseButton1Click:Connect(callback)
@@ -72,7 +72,7 @@ local function createSwitch(text, callback)
     switch.Size = UDim2.new(0, 200, 0, 40)
     switch.Position = UDim2.new(0, 20, 0, yOffset)
     switch.Text = text .. " : OFF"
-    switch.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+    switch.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red color
     switch.TextColor3 = Color3.new(1, 1, 1)
     yOffset = yOffset + 45
     local state = false
@@ -123,37 +123,9 @@ local function createDropdown(name, callback)
     return dropdown
 end
 
--- ==================== START OF YOUR FEATURES ====================
+-- ==================== YOUR FEATURES ====================
 
--- 1. Pet selection dropdown
-local petDropdown = createDropdown("Select Pet", function(text)
-    -- Your code for equipping pet
-    local petsFolder = LocalPlayer:WaitForChild("petsFolder")
-    for _, folder in pairs(petsFolder:GetChildren()) do
-        if folder:IsA("Folder") then
-            for _, pet in pairs(folder:GetChildren()) do
-                game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("unequipPet", pet)
-            end
-        end
-    end
-    task.wait(0.2)
-    local petName = text
-    local petsToEquip = {}
-    for _, pet in pairs(LocalPlayer.petsFolder.Unique:GetChildren()) do
-        if pet.Name == petName then
-            table.insert(petsToEquip, pet)
-        end
-    end
-    local maxPets = 8
-    local equippedCount = math.min(#petsToEquip, maxPets)
-    for i=1, equippedCount do
-        game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", petsToEquip[i])
-        task.wait(0.1)
-    end
-end)
-
-local wildWizard = petDropdown:Add("Wild Wizard")
-local mightyMonster = petDropdown:Add("Mighty Monster")
+-- 1. Remove Pet selection dropdown (no code needed here)
 
 -- 2. Auto Good Karma Switch
 local autoGoodKarmaSwitch = createSwitch("Auto Good Karma", function(bool)
@@ -242,12 +214,11 @@ local whitelistSwitch = createSwitch("Auto Whitelist Friends", function(state)
 end)
 
 -- 5. Whitelist and UnWhitelist TextBoxes
+local yOffset = yOffset + 10 -- adjust spacing
 local whitelistBox = Instance.new("TextBox", frame)
 whitelistBox.Size = UDim2.new(0, 200, 0, 40)
 whitelistBox.Position = UDim2.new(0, 20, 0, yOffset)
 whitelistBox.PlaceholderText = "Whitelist"
-yOffset = yOffset + 45
-
 local function whitelistAdd()
     local targetName = whitelistBox.Text
     local targetPlayer = Players:FindFirstChild(targetName)
@@ -256,15 +227,13 @@ local function whitelistAdd()
         print("Whitelisted " .. targetPlayer.Name)
     end
 end
-
 local whitelistAddBtn = createButton("Whitelist", whitelistAdd)
 
+local yOffset2 = yOffset + 50
 local unWhitelistBox = Instance.new("TextBox", frame)
 unWhitelistBox.Size = UDim2.new(0, 200, 0, 40)
-unWhitelistBox.Position = UDim2.new(0, 20, 0, yOffset)
+unWhitelistBox.Position = UDim2.new(0, 20, 0, yOffset2)
 unWhitelistBox.PlaceholderText = "UnWhitelist"
-yOffset = yOffset + 45
-
 local function unWhitelist()
     local targetName = unWhitelistBox.Text
     local targetPlayer = Players:FindFirstChild(targetName)
@@ -273,7 +242,6 @@ local function unWhitelist()
         print("Unwhitelisted " .. targetPlayer.Name)
     end
 end
-
 local unWhitelistBtn = createButton("UnWhitelist", unWhitelist)
 
 -- 6. Auto Kill toggle
@@ -318,17 +286,16 @@ local targetDropdown = createDropdown("Select Target", function(displayName)
     end
 end)
 
--- Fill initial target list
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= LocalPlayer then
         targetDropdown:Add(player.DisplayName)
     end
 end
 
-Players.PlayerAdded:Connect(function(player)
+Players.PlayerAdded:Connect(function()
     targetDropdown:Add(player.DisplayName)
 end)
-Players.PlayerRemoving:Connect(function(player)
+Players.PlayerRemoving:Connect(function()
     targetDropdown:Clear()
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr ~= LocalPlayer then
@@ -339,7 +306,6 @@ end)
 
 local function removeTarget()
     if selectedTarget then
-        -- Remove from list
         for i, v in ipairs(targetPlayerNames) do
             if v == selectedTarget then
                 table.remove(targetPlayerNames, i)
@@ -405,7 +371,6 @@ end
 Players.PlayerAdded:Connect(function(player)
     spyDropdown:Add(player.DisplayName)
 end)
-
 Players.PlayerRemoving:Connect(function(player)
     spyDropdown:Clear()
     for _, plr in ipairs(Players:GetPlayers()) do
@@ -583,7 +548,6 @@ local followDropdown = createDropdown("Teleport player", function(displayName)
     end
 end)
 
--- Populate follow list at start
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= LocalPlayer then
         followDropdown:Add(player.DisplayName)
@@ -591,7 +555,13 @@ for _, player in ipairs(Players:GetPlayers()) do
 end
 
 Players.PlayerAdded:Connect(function()
-    followDropdown:Add(player.DisplayName)
+    -- refresh list
+    followDropdown:Clear()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            followDropdown:Add(plr.DisplayName)
+        end
+    end
 end)
 
 Players.PlayerRemoving:Connect(function()
@@ -602,7 +572,6 @@ Players.PlayerRemoving:Connect(function()
             followDropdown:Add(plr.DisplayName)
         end
     end
-    -- check if following target left
     if followTarget and not followTarget.Parent then
         followTarget = nil
         following = false
@@ -729,21 +698,8 @@ end
 local timeDropdown = createDropdown("change time", function(selection)
     changeTime(selection)
 end)
-
 for _, option in ipairs(times) do
     timeDropdown:Add(option)
 end
 
--- END of features
-
--- Optional: You can add labels for sections if you like
-local sectionLabel = Instance.new("TextLabel", frame)
-sectionLabel.Size = UDim2.new(1, 0, 0, 20)
-sectionLabel.Position = UDim2.new(0, 10, 0, 40)
-sectionLabel.Text = "Features"
-sectionLabel.TextColor3 = Color3.new(1,1,1)
-sectionLabel.BackgroundTransparency = 1
-sectionLabel.TextSize = 14
-sectionLabel.Font = Enum.Font.SourceSansBold
-
--- You can also organize features into sections visually if desired
+-- END OF FIXED SCRIPT
