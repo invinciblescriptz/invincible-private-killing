@@ -10,11 +10,9 @@ local LP = Players.LocalPlayer
 local workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local VirtualUser = game:GetService("VirtualUser")
+local muscleEvent = game:GetService("ReplicatedStorage"):WaitForChild("muscleEvent") -- Make sure this exists
 
 local window = MainWindow
-
--- Reference to muscleEvent (make sure this exists in your game)
-local muscleEvent = game:GetService("ReplicatedStorage"):WaitForChild("muscleEvent") -- Adjust if different
 
 -- Anti AFK
 local antiAfkConn
@@ -34,12 +32,13 @@ local function toggleAntiAfk(state)
     end
 end
 
-local KillerTab = window:AddTab("Kill") -- Create the tab for killer features
+-- =================== Tabs and Features ===================
 
--- Add features to "Kill" tab
+-- Main Kill Tab
+local KillerTab = window:AddTab("Kill")
 local Kill = KillerTab
 
--- Auto Good Karma
+-- Auto Karma
 Kill:AddSwitch("Auto Good Karma", function(state)
     AutoGoodKarma = state
     task.spawn(function()
@@ -172,7 +171,7 @@ Kill:AddSwitch("Auto Kill", function(state)
     end)
 end)
 
--- Target dropdown for specific target
+-- Target selection dropdown
 local targetPlayerNames = {}
 local targetDropdown = Kill:AddDropdown("Select Target", function(displayName)
     for _, player in ipairs(Players:GetPlayers()) do
@@ -180,7 +179,6 @@ local targetDropdown = Kill:AddDropdown("Select Target", function(displayName)
             if not table.find(targetPlayerNames, player.Name) then
                 table.insert(targetPlayerNames, player.Name)
             end
-            -- Save as selected target
             SelectedTarget = player.Name
             break
         end
@@ -205,7 +203,6 @@ Players.PlayerAdded:Connect(function()
 end)
 Players.PlayerRemoving:Connect(function(player)
     updateTargetDropdown()
-    -- Remove from target list if present
     for i = #targetPlayerNames, 1, -1 do
         if targetPlayerNames[i] == player.Name then
             table.remove(targetPlayerNames, i)
@@ -246,7 +243,7 @@ Kill:AddSwitch("Start Kill Target", function(state)
     end)
 end)
 
--- View and follow other players
+-- View and follow
 local ViewDropdownItems = {}
 local ViewTargetName = nil
 local spying = false
@@ -272,7 +269,7 @@ end)
 Players.PlayerRemoving:Connect(function(player)
     if player ~= LP then
         ViewDropdownItems[player.Name] = nil
-        -- Rebuild dropdown
+        -- rebuild dropdown
         local options = {}
         for _, display in pairs(ViewDropdownItems) do
             options[#options + 1] = display
@@ -284,7 +281,6 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Follow selected player
 local function followPlayer(target)
     local myChar = LP.Character
     local targetChar = target.Character
@@ -298,7 +294,6 @@ local function followPlayer(target)
 end
 
 local following = false
-local followTarget = nil
 
 Kill:AddSwitch("View Player", function(state)
     spying = state
@@ -321,7 +316,6 @@ Kill:AddSwitch("View Player", function(state)
     end)
 end)
 
--- Button to stop following
 Kill:AddButton("Stop Following", function()
     spying = false
     print("Stopped following")
@@ -355,12 +349,11 @@ Kill:AddButton("Remove Punch Anim", function()
     end
 end)
 
--- ========================
--- END: All "Killer" tab features are now added.
--- ========================
+-- =================== Additional kill method tab ===================
 
 local killmethodTab = window:AddTab("kill method")
 
+-- Fast Punch toggle
 local function toggleFastPunch(s)
     states.FastPunch = s
     if s then
@@ -388,7 +381,7 @@ local function toggleFastPunch(s)
                         end
                     end
                 end)
-                task.wait(0.085) -- Adjust delay for better performance
+                task.wait(0.085)
             end
         end)
     end
@@ -396,6 +389,7 @@ end
 
 killmethodTab:AddSwitch("Fast Punch", toggleFastPunch)
 
+-- Auto Slam toggle
 local autoSlamActive = false
 killmethodTab:AddSwitch("auto slams", function(state)
     autoSlamActive = state
@@ -424,7 +418,7 @@ killmethodTab:AddSwitch("auto slams", function(state)
     end
 end)
 
--- Dropdown for changing time
+-- Change time dropdown
 local timeOptions = {
     "Morning",
     "Noon",
@@ -484,3 +478,5 @@ local timeDropdown = killmethodTab:AddDropdown("change time", changeTime)
 for _, option in ipairs(timeOptions) do
     timeDropdown:Add(option)
 end
+
+-- =================== END ===================
