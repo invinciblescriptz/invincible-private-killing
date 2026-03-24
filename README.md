@@ -1,4 +1,5 @@
--- // Muscle Legends OP - FIXED GUI (March 2026) \\ --
+-- // Muscle Legends OP - Kavo UI Fixed (No Rayfield) - Full Script \\ 
+-- Paste this entire chunk at once
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -6,7 +7,7 @@ local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
--- Wait for everything to load properly
+-- Wait for game to load
 task.wait(1)
 if not LocalPlayer.Character then
     LocalPlayer.CharacterAdded:Wait()
@@ -19,26 +20,28 @@ local muscleEvent = ReplicatedStorage:FindFirstChild("muscleEvent")
     or ReplicatedStorage.rEvents:FindFirstChild("muscleEvent")
 
 if not muscleEvent then
-    warn("muscleEvent not found!")
+    warn("⚠️ muscleEvent not found! Some kill features may not work.")
 end
 
--- ==================== LOAD KAVO UI (More Reliable Method) ====================
+-- Load Kavo UI (most reliable method in 2026)
 local Library = nil
 pcall(function()
     Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 end)
 
 if not Library then
-    -- Backup loadstring (often more stable)
-    Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/kav"))()
+    -- Backup loadstring (often works better with some executors)
+    pcall(function()
+        Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/bloodball/-back-ups-for-libs/main/kav"))()
+    end)
 end
 
 if not Library then
-    error("Failed to load Kavo UI Library! Try a different executor or rejoin.")
+    error("❌ Failed to load Kavo UI. Try rejoining or a different executor.")
 end
 
--- Create Window (Correct Kavo syntax)
-local Window = Library:CreateLib("Muscle Legends OP", "DarkTheme")  -- or "BloodTheme", "Synapse", etc.
+-- Create Window
+local Window = Library:CreateLib("Muscle Legends OP", "DarkTheme")  -- Try "BloodTheme" or "Synapse" if you want different look
 
 local KillTab = Window:NewTab("Kill")
 
@@ -48,7 +51,6 @@ local autoBadKarma = false
 local killAllToggle = false
 local targetKillActive = false
 local autoPunchNoAnim = false
-local autoEquipPunch = false
 local autoGroundSlams = false
 local autoBrawl = false
 local following = false
@@ -62,18 +64,14 @@ local function safeFire(event, ...)
 end
 
 local function getRoot(plr)
-    if plr and plr.Character then
-        return plr.Character:FindFirstChild("HumanoidRootPart")
-    end
-    return nil
+    return plr and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
 end
 
--- ==================== PETS ====================
-local PetsSection = KillTab:NewSection("Pets")
+-- ====================== PETS ======================
+KillTab:NewSection("Pets")
 
-PetsSection:NewLabel("Select Pet")
-
-local petDropdown = PetsSection:NewDropdown("Select Pet", "Choose a pet", {"Wild Wizard", "Mighty Monster"}, function(petName)
+local petDropdown = KillTab:NewDropdown("Select Pet", "Choose pet to equip", {"Wild Wizard", "Mighty Monster"}, function(petName)
+    -- Unequip all
     pcall(function()
         for _, folder in pairs(LocalPlayer:FindFirstChild("petsFolder"):GetChildren()) do
             if folder:IsA("Folder") then
@@ -86,9 +84,9 @@ local petDropdown = PetsSection:NewDropdown("Select Pet", "Choose a pet", {"Wild
     task.wait(0.5)
 
     local equipped = 0
-    local unique = LocalPlayer.petsFolder:FindFirstChild("Unique")
-    if unique then
-        for _, pet in pairs(unique:GetChildren()) do
+    local uniqueFolder = LocalPlayer.petsFolder:FindFirstChild("Unique")
+    if uniqueFolder then
+        for _, pet in pairs(uniqueFolder:GetChildren()) do
             if pet.Name == petName and equipped < 8 then
                 ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", pet)
                 equipped += 1
@@ -98,23 +96,19 @@ local petDropdown = PetsSection:NewDropdown("Select Pet", "Choose a pet", {"Wild
     end
 end)
 
--- ==================== KARMA ====================
+-- ====================== KARMA ======================
 local function karmaLoop(isGood)
     task.spawn(function()
         while (isGood and autoGoodKarma) or (not isGood and autoBadKarma) do
-            local char = LocalPlayer.Character
-            if char then
+            if LocalPlayer.Character then
                 for _, plr in ipairs(Players:GetPlayers()) do
                     if plr ~= LocalPlayer then
                         local evil = plr:FindFirstChild("evilKarma")
                         local good = plr:FindFirstChild("goodKarma")
                         if evil and good then
-                            local attack = isGood and (evil.Value > good.Value) or (good.Value > evil.Value)
-                            if attack then
-                                local root = getRoot(plr)
-                                if root then
-                                    safeFire(muscleEvent, "punch", "rightHand")
-                                end
+                            local condition = isGood and (evil.Value > good.Value) or (good.Value > evil.Value)
+                            if condition then
+                                safeFire(muscleEvent, "punch", "rightHand")
                             end
                         end
                     end
@@ -125,18 +119,18 @@ local function karmaLoop(isGood)
     end)
 end
 
-KillTab:NewToggle("Auto Good Karma", "Attacks players with more evil karma", false, function(state)
+KillTab:NewToggle("Auto Good Karma", "Attacks high evil karma players", false, function(state)
     autoGoodKarma = state
     if state then karmaLoop(true) end
 end)
 
-KillTab:NewToggle("Auto Bad Karma", "Attacks players with more good karma", false, function(state)
+KillTab:NewToggle("Auto Bad Karma", "Attacks high good karma players", false, function(state)
     autoBadKarma = state
     if state then karmaLoop(false) end
 end)
 
--- ==================== AUTO KILL ALL ====================
-KillTab:NewToggle("Auto Kill All", "Kills everyone except whitelisted", false, function(state)
+-- ====================== AUTO KILL ALL ======================
+KillTab:NewToggle("Auto Kill All (Skip Whitelist)", "Kills everyone not whitelisted", false, function(state)
     killAllToggle = state
     if not state then return end
     task.spawn(function()
@@ -152,10 +146,10 @@ KillTab:NewToggle("Auto Kill All", "Kills everyone except whitelisted", false, f
     end)
 end)
 
--- ==================== TARGET KILL ====================
-local TargetSection = KillTab:NewSection("Target Kill")
+-- ====================== TARGET KILL ======================
+KillTab:NewSection("Target Kill")
 
-local targetDropdown = TargetSection:NewDropdown("Add Target", "Select player", {}, function(displayName)
+local targetDropdown = KillTab:NewDropdown("Add Target", "Select player by display name", {}, function(displayName)
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr.DisplayName == displayName and not table.find(targetPlayerNames, plr.Name) then
             table.insert(targetPlayerNames, plr.Name)
@@ -164,7 +158,7 @@ local targetDropdown = TargetSection:NewDropdown("Add Target", "Select player", 
     end
 end)
 
--- Auto populate players
+-- Auto populate
 for _, plr in ipairs(Players:GetPlayers()) do
     if plr ~= LocalPlayer then
         targetDropdown:Add(plr.DisplayName)
@@ -172,12 +166,10 @@ for _, plr in ipairs(Players:GetPlayers()) do
 end
 
 Players.PlayerAdded:Connect(function(plr)
-    if plr ~= LocalPlayer then
-        targetDropdown:Add(plr.DisplayName)
-    end
+    if plr ~= LocalPlayer then targetDropdown:Add(plr.DisplayName) end
 end)
 
-TargetSection:NewButton("Clear Targets", "Remove all targets", function()
+KillTab:NewButton("Clear All Targets", "Remove all selected targets", function()
     targetPlayerNames = {}
 end)
 
@@ -198,8 +190,8 @@ KillTab:NewToggle("Kill Selected Targets", "", false, function(state)
     end)
 end)
 
--- ==================== AUTO PUNCH & SLAMS ====================
-KillTab:NewToggle("Auto Punch [No Animation]", "Very fast punching", false, function(state)
+-- ====================== AUTO PUNCH & SLAMS ======================
+KillTab:NewToggle("Auto Punch [No Animation - OP]", "Super fast punching", false, function(state)
     autoPunchNoAnim = state
     if state then
         task.spawn(function()
@@ -235,46 +227,92 @@ KillTab:NewToggle("Auto Ground Slams", "", false, function(state)
     end
 end)
 
--- ==================== OTHER FEATURES (Size Glitch, Follow, Time) ====================
-KillTab:NewButton("NaN Size Glitch", "Makes you huge/tiny", function()
+-- ====================== EXTRAS ======================
+KillTab:NewSection("Extras")
+
+KillTab:NewButton("NaN Size Glitch", "Makes character huge/glitched", function()
     local remote = ReplicatedStorage.rEvents:FindFirstChild("changeSpeedSizeRemote")
     if remote then
         remote:InvokeServer("changeSize", 0/0)
     end
 end)
 
--- Follow player (simple version)
-local followDropdown = KillTab:NewDropdown("Follow Player", "", {}, function(displayName)
+KillTab:NewToggle("Auto Join Brawl (Good Mode)", "", false, function(state)
+    autoBrawl = state
+    if state then
+        task.spawn(function()
+            while autoBrawl do
+                safeFire(ReplicatedStorage.rEvents.brawlEvent, "joinBrawl")
+                task.wait(1)
+            end
+        end)
+    end
+end)
+
+-- Follow Player
+local followDropdown = KillTab:NewDropdown("Follow / TP Behind Player", "", {}, function(displayName)
     followTargetName = displayName
     following = true
 end)
 
 for _, plr in ipairs(Players:GetPlayers()) do
-    if plr ~= LocalPlayer then followDropdown:Add(plr.DisplayName) end
+    if plr ~= LocalPlayer then
+        followDropdown:Add(plr.DisplayName)
+    end
 end
 
 KillTab:NewButton("Stop Following", "", function()
     following = false
+    followTargetName = nil
 end)
 
 RunService.Heartbeat:Connect(function()
     if following and followTargetName then
         local target = Players:FindFirstChild(followTargetName)
-        if target and target.Character and LocalPlayer.Character then
-            local myRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
+        local myChar = LocalPlayer.Character
+        local tChar = target and target.Character
+        if myChar and tChar then
+            local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+            local tRoot = tChar:FindFirstChild("HumanoidRootPart")
             if myRoot and tRoot then
-                local pos = tRoot.Position - tRoot.CFrame.LookVector * 5
+                local pos = tRoot.Position - (tRoot.CFrame.LookVector * 5)
                 myRoot.CFrame = CFrame.new(pos, tRoot.Position)
             end
         end
     end
 end)
 
-print("✅ Muscle Legends OP Script Loaded! GUI should now appear.")
+-- Time Changer
+KillTab:NewSection("World Time")
 
--- If the GUI still doesn't show, try these:
--- 1. Rejoin the game
--- 2. Use a different executor (try Solara, Wave, or Fluxus)
--- 3. Execute this single line first to test Kavo:
---    loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))():CreateLib("Test", "DarkTheme")
+local times = {"Morning","Noon","Afternoon","Sunset","Night","Midnight","Dawn","Early Morning"}
+
+local timeDropdown = KillTab:NewDropdown("Change Time", "", times, function(sel)
+    Lighting.Brightness = 2
+    Lighting.FogEnd = 100000
+
+    if sel == "Morning" then
+        Lighting.ClockTime = 6; Lighting.Ambient = Color3.fromRGB(200,200,255)
+    elseif sel == "Noon" then
+        Lighting.ClockTime = 12; Lighting.Brightness = 3; Lighting.Ambient = Color3.fromRGB(255,255,255)
+    elseif sel == "Afternoon" then
+        Lighting.ClockTime = 16; Lighting.Ambient = Color3.fromRGB(255,220,180)
+    elseif sel == "Sunset" then
+        Lighting.ClockTime = 18; Lighting.Ambient = Color3.fromRGB(255,150,100); Lighting.FogEnd = 500
+    elseif sel == "Night" then
+        Lighting.ClockTime = 20; Lighting.Brightness = 1.5; Lighting.Ambient = Color3.fromRGB(100,100,150)
+    elseif sel == "Midnight" then
+        Lighting.ClockTime = 0; Lighting.Brightness = 1; Lighting.Ambient = Color3.fromRGB(50,50,100)
+    elseif sel == "Dawn" then
+        Lighting.ClockTime = 4; Lighting.Ambient = Color3.fromRGB(180,180,220)
+    elseif sel == "Early Morning" then
+        Lighting.ClockTime = 2; Lighting.Brightness = 1.2; Lighting.Ambient = Color3.fromRGB(100,120,180)
+    end
+end)
+
+print("✅ Muscle Legends OP - Kavo UI Loaded! GUI should appear now.")
+
+-- Notification if library supports it
+pcall(function()
+    Library:Notify("Success!", "Script loaded correctly. Enjoy the kills!", 5)
+end)
