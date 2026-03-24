@@ -3,17 +3,16 @@ local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "MyFeatureUI"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 650, 0, 500)
+frame.Size = UDim2.new(0, 470, 0, 700)
 frame.Position = UDim2.new(0.5, -325, 0.5, -250)
-frame.BackgroundColor3 = Color3.fromRGB(0, 10, 0)
+frame.BackgroundColor3 = Color3.fromRGB(139, 0, 0)
 frame.BorderSizePixel = 0
 
--- Make the frame draggable
+-- Make frame draggable
 do
-    local userInputService = game:GetService("UserInputService")
+    local UIS = game:GetService("UserInputService")
     local dragging = false
     local dragStart, startPos
-
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
@@ -21,14 +20,12 @@ do
             startPos = frame.Position
         end
     end)
-
     frame.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
     end)
-
-    userInputService.InputChanged:Connect(function(input)
+    UIS.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             frame.Position = startPos + UDim2.new(0, delta.X, 0, delta.Y)
@@ -36,7 +33,7 @@ do
     end)
 end
 
--- Title Label
+-- Title
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, 0, 0, 50)
 title.BackgroundColor3 = Color3.fromRGB(0, 20, 0)
@@ -45,7 +42,7 @@ title.Text = "Invincible Private Killing"
 title.Font = Enum.Font.SourceSansBold
 title.TextSize = 20
 
-local y = 60
+local yOffset = 60
 
 -- Helper functions
 local function createButton(text, yPos)
@@ -88,7 +85,6 @@ local function addSwitch(parent, text, callback, yPos)
     switch.Text = text .. ": OFF"
     switch.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     switch.TextColor3 = Color3.new(1, 1, 1)
-
     local state = false
     switch.MouseButton1Click:Connect(function()
         state = not state
@@ -184,24 +180,18 @@ local petDropdown = addDropdown(frame, "Select Pet", function(selected)
     end
     task.wait(0.2)
     -- Equip selected pet
-    local petsToEquip = {}
     local uniqueFolder = petsFolder:FindFirstChild("Unique")
     if uniqueFolder then
         for _, pet in pairs(uniqueFolder:GetChildren()) do
             if pet.Name == selected then
-                table.insert(petsToEquip, pet)
+                game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", pet)
             end
         end
-    end
-    local maxPets = 8
-    for i = 1, math.min(#petsToEquip, maxPets) do
-        game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", petsToEquip[i])
-        task.wait(0.1)
     end
 end)
 y = y + 35
 
--- 2. Switches (AutoGoodKarma, AutoBadKarma, etc.)
+-- 2. AutoKarma switches
 local autoGoodKarma = false
 local autoBadKarma = false
 local autoKill = false
@@ -209,28 +199,33 @@ local autoEquipPunch = false
 local autoPunchNoAnim = false
 local _G = _G or {}
 
+local function fireTouch(targetPart, otherPart)
+    pcall(function()
+        firetouchinterest(targetPart, otherPart, 1)
+        firetouchinterest(targetPart, otherPart, 0)
+    end)
+end
+
 -- Auto Good Karma
 local goodKarmaSwitch = addSwitch(frame, "Auto Good Karma", function(state)
     autoGoodKarma = state
     if state then
         task.spawn(function()
             while autoGoodKarma do
-                local myChar = player.Character
-                local rightHand = myChar and myChar:FindFirstChild("RightHand")
-                local leftHand = myChar and myChar:FindFirstChild("LeftHand")
+                local char = player.Character
+                local rightHand = char and char:FindFirstChild("RightHand")
+                local leftHand = char and char:FindFirstChild("LeftHand")
                 if rightHand and leftHand then
                     for _, target in ipairs(game.Players:GetPlayers()) do
-                        if target ~= player then
-                            local evilKarma = target.Character and target.Character:FindFirstChild("evilKarma")
-                            local goodKarma = target.Character and target.Character:FindFirstChild("goodKarma")
+                        if target ~= player and target.Character then
+                            local evilKarma = target.Character:FindFirstChild("evilKarma")
+                            local goodKarma = target.Character:FindFirstChild("goodKarma")
                             if evilKarma and goodKarma and evilKarma:IsA("IntValue") and goodKarma:IsA("IntValue") then
                                 if goodKarma.Value < evilKarma.Value then
                                     local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
                                     if rootPart then
-                                        firetouchinterest(rightHand, rootPart, 1)
-                                        firetouchinterest(leftHand, rootPart, 1)
-                                        firetouchinterest(rightHand, rootPart, 0)
-                                        firetouchinterest(leftHand, rootPart, 0)
+                                        fireTouch(rightHand, rootPart)
+                                        fireTouch(leftHand, rootPart)
                                     end
                                 end
                             end
@@ -250,22 +245,20 @@ local badKarmaSwitch = addSwitch(frame, "Auto Bad Karma", function(state)
     if state then
         task.spawn(function()
             while autoBadKarma do
-                local myChar = player.Character
-                local rightHand = myChar and myChar:FindFirstChild("RightHand")
-                local leftHand = myChar and myChar:FindFirstChild("LeftHand")
+                local char = player.Character
+                local rightHand = char and char:FindFirstChild("RightHand")
+                local leftHand = char and char:FindFirstChild("LeftHand")
                 if rightHand and leftHand then
                     for _, target in ipairs(game.Players:GetPlayers()) do
-                        if target ~= player then
-                            local evilKarma = target.Character and target.Character:FindFirstChild("evilKarma")
-                            local goodKarma = target.Character and target.Character:FindFirstChild("goodKarma")
+                        if target ~= player and target.Character then
+                            local evilKarma = target.Character:FindFirstChild("evilKarma")
+                            local goodKarma = target.Character:FindFirstChild("goodKarma")
                             if evilKarma and goodKarma and evilKarma:IsA("IntValue") and goodKarma:IsA("IntValue") then
                                 if evilKarma.Value > goodKarma.Value then
                                     local rootPart = target.Character:FindFirstChild("HumanoidRootPart")
                                     if rootPart then
-                                        firetouchinterest(rightHand, rootPart, 1)
-                                        firetouchinterest(leftHand, rootPart, 1)
-                                        firetouchinterest(rightHand, rootPart, 0)
-                                        firetouchinterest(leftHand, rootPart, 0)
+                                        fireTouch(rightHand, rootPart)
+                                        fireTouch(leftHand, rootPart)
                                     end
                                 end
                             end
@@ -283,22 +276,26 @@ y = y + 40
 local playerWhitelist = {}
 local friendWhitelistActive = false
 
+local function updateWhitelist()
+    for _, p in ipairs(game.Players:GetPlayers()) do
+        if p ~= player and player:IsFriendsWith(p.UserId) then
+            playerWhitelist[p.Name] = true
+        end
+    end
+end
+
 local whitelistSwitch = addSwitch(frame, "Auto Whitelist Friends", function(state)
     friendWhitelistActive = state
     if state then
-        for _, p in ipairs(game.Players:GetPlayers()) do
-            if p ~= player and player:IsFriendsWith(p.UserId) then
-                playerWhitelist[p.Name] = true
-            end
-        end
+        updateWhitelist()
         game.Players.PlayerAdded:Connect(function(p)
             if p ~= player and player:IsFriendsWith(p.UserId) then
                 playerWhitelist[p.Name] = true
             end
         end)
     else
-        for name in pairs(playerWhitelist) do
-            playerWhitelist[name] = nil
+        for k in pairs(playerWhitelist) do
+            playerWhitelist[k] = nil
         end
     end
 end)
@@ -306,20 +303,20 @@ y = y + 40
 
 local whitelistInput = createInput("Whitelist", y)
 whitelistInput.FocusLost:Connect(function()
-    local targetName = whitelistInput.Text
-    local targetPlayer = game.Players:FindFirstChild(targetName)
-    if targetPlayer then
-        playerWhitelist[targetPlayer.Name] = true
+    local n = whitelistInput.Text
+    local p = game.Players:FindFirstChild(n)
+    if p then
+        playerWhitelist[p.Name] = true
     end
 end)
 y = y + 45
 
 local unWhitelistInput = createInput("UnWhitelist", y)
 unWhitelistInput.FocusLost:Connect(function()
-    local targetName = unWhitelistInput.Text
-    local targetPlayer = game.Players:FindFirstChild(targetName)
-    if targetPlayer then
-        playerWhitelist[targetPlayer.Name] = nil
+    local n = unWhitelistInput.Text
+    local p = game.Players:FindFirstChild(n)
+    if p then
+        playerWhitelist[p.Name] = nil
     end
 end)
 y = y + 45
@@ -340,15 +337,14 @@ local autoKillSwitch = addSwitch(frame, "Auto Kill", function(state)
                 end
                 for _, target in ipairs(game.Players:GetPlayers()) do
                     if target ~= player and not playerWhitelist[target.Name] then
-                        local tChar = target.Character
-                        local rootP = tChar and tChar:FindFirstChild("HumanoidRootPart")
-                        if rootP then
-                            pcall(function()
-                                firetouchinterest(rightHand, rootP, 1)
-                                firetouchinterest(leftHand, rootP, 1)
-                                firetouchinterest(rightHand, rootP, 0)
-                                firetouchinterest(leftHand, rootP, 0)
-                            end)
+                        if target.Character then
+                            local rootP = target.Character:FindFirstChild("HumanoidRootPart")
+                            if rootP then
+                                pcall(function()
+                                    fireTouch(rightHand, rootP)
+                                    fireTouch(leftHand, rootP)
+                                end)
+                            end
                         end
                     end
                 end
@@ -359,19 +355,18 @@ local autoKillSwitch = addSwitch(frame, "Auto Kill", function(state)
 end)
 y = y + 40
 
--- 5. Target Player Dropdown and Kill Target toggle
+-- 5. Target Player Dropdown and Kill toggle
 local targetPlayerNames = {}
 local selectedTarget = nil
 
 local function populateTargetDropdown()
-    -- clear previous options
+    -- Clear previous
     for _, child in ipairs(frame:GetChildren()) do
         if child.Name == "TargetDropdown" then
             child:Destroy()
         end
     end
-    -- Create dropdown
-    local targetDropdown = addDropdown(frame, "Select Target", function(displayName)
+    local dd = addDropdown(frame, "Select Target", function(displayName)
         for _, p in ipairs(game.Players:GetPlayers()) do
             if p.DisplayName == displayName then
                 selectedTarget = p
@@ -379,24 +374,23 @@ local function populateTargetDropdown()
             end
         end
     end)
-    targetDropdown.Name = "TargetDropdown"
-    -- populate
+    dd.Name = "TargetDropdown"
     for _, p in ipairs(game.Players:GetPlayers()) do
         if p ~= player then
-            targetDropdown.Add(p.DisplayName)
+            dd.Add(p.DisplayName)
         end
     end
-    return targetDropdown
+    return dd
 end
 
 local targetDropdown = populateTargetDropdown()
 
-local killTarget = false
+local killTargetActive = false
 local function toggleKillTarget()
-    killTarget = not killTarget
-    if killTarget then
+    killTargetActive = not killTargetActive
+    if killTargetActive then
         task.spawn(function()
-            while killTarget do
+            while killTargetActive do
                 if selectedTarget and selectedTarget.Character then
                     local rootPart = selectedTarget.Character:FindFirstChild("HumanoidRootPart")
                     local rightHand = player.Character and player.Character:FindFirstChild("RightHand")
@@ -407,10 +401,8 @@ local function toggleKillTarget()
                     end
                     if rightHand and leftHand then
                         pcall(function()
-                            firetouchinterest(rightHand, rootPart, 1)
-                            firetouchinterest(leftHand, rootPart, 1)
-                            firetouchinterest(rightHand, rootPart, 0)
-                            firetouchinterest(leftHand, rootPart, 0)
+                            fireTouch(rightHand, rootPart)
+                            fireTouch(leftHand, rootPart)
                         end)
                     end
                 end
@@ -420,11 +412,11 @@ local function toggleKillTarget()
     end
 end
 
-local startKillBtn = createButton("Start Kill Target", y)
-startKillBtn.MouseButton1Click:Connect(toggleKillTarget)
+local btnKill = createButton("Start Kill Target", y)
+btnKill.MouseButton1Click:Connect(toggleKillTarget)
 y = y + 45
 
--- 6. View Player (Spy) Dropdown
+-- 6. View Player (Spy)
 local targetViewPlayer = nil
 local spying = false
 
@@ -446,7 +438,7 @@ local function populateViewDropdown()
             child:Destroy()
         end
     end
-    local viewDropdown = addDropdown(frame, "Select View Target", function(displayName)
+    local dd = addDropdown(frame, "Select View Target", function(displayName)
         for _, p in ipairs(game.Players:GetPlayers()) do
             if p.DisplayName == displayName then
                 targetViewPlayer = p
@@ -454,16 +446,15 @@ local function populateViewDropdown()
             end
         end
     end)
-    viewDropdown.Name = "ViewDropdown"
+    dd.Name = "ViewDropdown"
     for _, p in ipairs(game.Players:GetPlayers()) do
         if p ~= player then
-            viewDropdown.Add(p.DisplayName)
+            dd.Add(p.DisplayName)
         end
     end
-    return viewDropdown
 end
 
-local viewDropdown = populateViewDropdown()
+populateViewDropdown()
 
 local function toggleSpy()
     spying = not spying
@@ -522,7 +513,7 @@ end
 local slamBtn = addSwitch(frame, "auto slams", toggleAutoSlam)
 y = y + 40
 
--- 8. Run external scripts button ("Touch Me!")
+-- 8. Crack Scripts Button
 local crackUrls = {
     "https://raw.githubusercontent.com/SadOz8/Stuffs/refs/heads/main/Crack",
     "https://raw.githubusercontent.com/SadOz8/Stuffs/refs/heads/main/Crack2",
@@ -549,7 +540,7 @@ local crackBtn = createButton("Touch Me!", y)
 crackBtn.MouseButton1Click:Connect(runCracks)
 y = y + 45
 
--- 9. Change Time (Day/Night)
+-- 9. Change Time (Lighting)
 local Lighting = game:GetService("Lighting")
 local timeOptions = {
     "Morning",
@@ -561,9 +552,8 @@ local timeOptions = {
     "Dawn",
     "Early Morning"
 }
-
 local function changeTime(selection)
-    -- Reset lighting
+    -- Reset Lighting
     Lighting.Brightness = 2
     Lighting.FogEnd = 100000
     Lighting.Ambient = Color3.fromRGB(127,127,127)
@@ -606,18 +596,16 @@ local function changeTime(selection)
 end
 
 local function populateTimeDropdown()
-    local dropdown = addDropdown(frame, "change time", changeTime)
+    local dd = addDropdown(frame, "change time", changeTime)
     for _, option in ipairs(timeOptions) do
-        dropdown.Add(option)
+        dd.Add(option)
     end
 end
 
 populateTimeDropdown()
 
 -- ================================
--- END: Features added
+-- Finalize: All features added
 -- ================================
 
--- Final note:
--- Make sure this script is a LocalScript in StarterPlayer > StarterPlayerScripts
--- and that your game has the necessary objects and remote events as expected.
+-- Note: Make sure this script is a LocalScript inside StarterPlayer > StarterPlayerScripts
