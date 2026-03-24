@@ -1,6 +1,6 @@
 local ScriptLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X", true))()
 local MainWindow = ScriptLibrary:AddWindow(string.format("Genesis Hub | Hello %s", game.Players.LocalPlayer.DisplayName), {
-    min_size = Vector2.new(660, 470),
+    min_size = Vector2.new(660, 700),
     can_resize = true,
     main_color = Color3.fromRGB(255, 192, 203)
 })
