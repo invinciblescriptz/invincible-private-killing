@@ -10,7 +10,7 @@ local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 gui.Name = "MyFeatureUI"
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 650, 0, 500)
+frame.Size = UDim2.new(0, 520, 0, 500)
 frame.Position = UDim2.new(0.5, -325, 0.5, -250)
 frame.BackgroundColor3 = Color3.fromRGB(0, 10, 0)
 frame.BorderSizePixel = 0
