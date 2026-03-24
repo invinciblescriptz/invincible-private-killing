@@ -10,7 +10,6 @@ local LP = Players.LocalPlayer
 local workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local VirtualUser = game:GetService("VirtualUser")
-local UserInputService = game:GetService("UserInputService")
 
 local window = MainWindow
 
@@ -397,7 +396,6 @@ end
 
 killmethodTab:AddSwitch("Fast Punch", toggleFastPunch)
 
--- Auto Slam
 local autoSlamActive = false
 killmethodTab:AddSwitch("auto slams", function(state)
     autoSlamActive = state
@@ -426,7 +424,7 @@ killmethodTab:AddSwitch("auto slams", function(state)
     end
 end)
 
--- Dropdown for time change
+-- Dropdown for changing time
 local timeOptions = {
     "Morning",
     "Noon",
