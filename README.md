@@ -4,7 +4,7 @@ local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 
--- Crear GUI principal
+-- Create main GUI
 local gui = Instance.new("ScreenGui", LocalPlayer:WaitForChild("PlayerGui"))
 gui.Name = "MyFeatureUI"
 
@@ -14,7 +14,7 @@ frame.Position = UDim2.new(0.5, -260, 0.5, -300)
 frame.BackgroundColor3 = Color3.fromRGB(0, 10, 0)
 frame.BorderSizePixel = 0
 
--- Función para hacer draggable
+-- Make draggable function
 local function makeDraggable(f)
     local dragging = false
     local dragStart, startPos
@@ -44,41 +44,33 @@ local function makeDraggable(f)
 end
 makeDraggable(frame)
 
--- Añadir un título
-local titleLabel = Instance.new("TextLabel", frame)
-titleLabel.Text = "Select damage or durability pet"
-titleLabel.TextSize = 18
-titleLabel.Font = Enum.Font.Merriweather
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.Size = UDim2.new(1, -20, 0, 30)
-titleLabel.Position = UDim2.new(0, 10, 0, 10)
-
--- Asumiendo que tienes un método 'AddDropdown' en tu sistema, sino debes implementarlo
--- Aquí como ejemplo:
-local Killer = {} -- reemplaza esto con tu sistema real
-function Killer:AddDropdown(labelText, callback)
-    -- Implementa tu método aquí
-    local dropdown = {} -- placeholder
-    -- Devuelve un objeto con método Add (para agregar opciones)
-    function dropdown:Add(optionText)
-        -- Agregar opción a dropdown
+-- Placeholder functions for GUI components
+local function AddDropdown(label, callback)
+    -- Implement your dropdown UI here
+    local dropdown = {}
+    function dropdown:Add(text)
+        -- Add option to dropdown
     end
-    -- Devuelve el objeto para usar
+    function dropdown:Clear()
+        -- Clear options
+    end
     return dropdown
 end
-function Killer:AddSwitch(labelText, callback)
-    -- Implementa tu método aquí
-end
-function Killer:AddButton(labelText, callback)
-    -- Implementa tu método aquí
+
+local function AddSwitch(label, callback)
+    -- Implement your switch UI here
 end
 
--- Ejemplo de implementación para añadir dropdowns y switches
-local dropdownPets = Killer:AddDropdown("Select Pet", function(text)
-    -- Función al seleccionar
+local function AddButton(label, callback)
+    -- Implement your button UI here
+end
+
+-- Pet selection dropdown
+local petDropdown = AddDropdown("Select Pet", function(selectedPetName)
     local petsFolder = LocalPlayer:FindFirstChild("petsFolder")
     if not petsFolder then return end
-    -- Desequipar todos los pets
+
+    -- Unequip all pets first
     for _, folder in pairs(petsFolder:GetChildren()) do
         if folder:IsA("Folder") then
             for _, pet in pairs(folder:GetChildren()) do
@@ -87,14 +79,15 @@ local dropdownPets = Killer:AddDropdown("Select Pet", function(text)
         end
     end
     task.wait(0.2)
-    -- Buscar y equipar el pet
-    local petName = text
+
+    -- Equip selected pet
     local petsToEquip = {}
     for _, pet in pairs(petsFolder.Unique:GetChildren()) do
-        if pet.Name == petName then
+        if pet.Name == selectedPetName then
             table.insert(petsToEquip, pet)
         end
     end
+
     local maxPets = 8
     for i = 1, math.min(#petsToEquip, maxPets) do
         game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", petsToEquip[i])
@@ -102,18 +95,18 @@ local dropdownPets = Killer:AddDropdown("Select Pet", function(text)
     end
 end)
 
-local wildWizard = dropdownPets:Add("Wild Wizard")
-local mightyMonster = dropdownPets:Add("Mighty Monster")
+local wildWizardOption = petDropdown:Add("Wild Wizard")
+local mightyMonsterOption = petDropdown:Add("Mighty Monster")
 
--- Switch para auto karma bueno
+-- Auto "Good Karma" switch
 local autoGoodKarma = false
-Killer:AddSwitch("Auto Good Karma", function(bool)
-    autoGoodKarma = bool
+AddSwitch("Auto Good Karma", function(isActive)
+    autoGoodKarma = isActive
     task.spawn(function()
         while autoGoodKarma do
-            local char = LocalPlayer.Character
-            local rightHand = char and char:FindFirstChild("RightHand")
-            local leftHand = char and char:FindFirstChild("LeftHand")
+            local character = LocalPlayer.Character
+            local rightHand = character and character:FindFirstChild("RightHand")
+            local leftHand = character and character:FindFirstChild("LeftHand")
             if rightHand and leftHand then
                 for _, target in ipairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer then
@@ -138,15 +131,15 @@ Killer:AddSwitch("Auto Good Karma", function(bool)
     end)
 end)
 
--- Switch para karma malo
+-- Auto "Bad Karma" switch
 local autoBadKarma = false
-Killer:AddSwitch("Auto Bad Karma", function(bool)
-    autoBadKarma = bool
+AddSwitch("Auto Bad Karma", function(isActive)
+    autoBadKarma = isActive
     task.spawn(function()
         while autoBadKarma do
-            local char = LocalPlayer.Character
-            local rightHand = char and char:FindFirstChild("RightHand")
-            local leftHand = char and char:FindFirstChild("LeftHand")
+            local character = LocalPlayer.Character
+            local rightHand = character and character:FindFirstChild("RightHand")
+            local leftHand = character and character:FindFirstChild("LeftHand")
             if rightHand and leftHand then
                 for _, target in ipairs(Players:GetPlayers()) do
                     if target ~= LocalPlayer then
@@ -171,10 +164,10 @@ Killer:AddSwitch("Auto Bad Karma", function(bool)
     end)
 end)
 
--- Auto whitelist amigos
+-- Whitelist friends auto-adding
 local playerWhitelist = {}
 local friendWhitelistActive = false
-Killer:AddSwitch("Auto Whitelist Friends", function(state)
+AddSwitch("Auto Whitelist Friends", function(state)
     friendWhitelistActive = state
     if state then
         for _, player in ipairs(Players:GetPlayers()) do
@@ -197,24 +190,24 @@ Killer:AddSwitch("Auto Whitelist Friends", function(state)
     end
 end)
 
-Killer:AddTextBox("Whitelist", function(text)
+AddTextBox("Whitelist", function(text)
     local target = Players:FindFirstChild(text)
     if target then
         playerWhitelist[target.Name] = true
     end
 end)
 
-Killer:AddTextBox("UnWhitelist", function(text)
+AddTextBox("UnWhitelist", function(text)
     local target = Players:FindFirstChild(text)
     if target then
         playerWhitelist[target.Name] = nil
     end
 end)
 
--- Auto kill
+-- Auto Kill switch
 local autoKill = false
-Killer:AddSwitch("Auto Kill", function(bool)
-    autoKill = bool
+AddSwitch("Auto Kill", function(isActive)
+    autoKill = isActive
     task.spawn(function()
         while autoKill do
             local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
@@ -245,11 +238,11 @@ Killer:AddSwitch("Auto Kill", function(bool)
     end)
 end)
 
--- Target management
+-- Target list for kill
 local targetPlayerNames = {}
 local selectedTarget = nil
 
-local targetDropdown = Killer:AddDropdown("Select Target", function(displayName)
+local targetDropdown = AddDropdown("Select Target", function(displayName)
     for _, player in ipairs(Players:GetPlayers()) do
         if player.DisplayName == displayName then
             if not table.find(targetPlayerNames, player.Name) then
@@ -271,7 +264,7 @@ local function refreshTargetDropdown()
     end
 end
 
--- Inicializar lista con jugadores existentes
+-- Initialize target list
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= LocalPlayer then
         targetDropdown:Add(player.DisplayName)
@@ -279,7 +272,6 @@ for _, player in ipairs(Players:GetPlayers()) do
     end
 end
 
--- Actualizar lista cuando entran jugadores
 Players.PlayerAdded:Connect(function(player)
     if player ~= LocalPlayer then
         targetDropdown:Add(player.DisplayName)
@@ -287,7 +279,6 @@ Players.PlayerAdded:Connect(function(player)
     end
 end)
 
--- Actualizar lista cuando salen jugadores
 Players.PlayerRemoving:Connect(function(player)
     for i = #targetPlayerNames, 1, -1 do
         if targetPlayerNames[i] == player.Name then
@@ -300,8 +291,8 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Botón para eliminar target seleccionado
-Killer:AddButton("Remove Selected Target", function()
+-- Remove selected target
+AddButton("Remove Selected Target", function()
     if selectedTarget then
         for i, v in ipairs(targetPlayerNames) do
             if v == selectedTarget then
@@ -314,9 +305,9 @@ Killer:AddButton("Remove Selected Target", function()
     end
 end)
 
--- Loop para atacar a los targets
+-- Kill target loop
 local killTarget = false
-Killer:AddSwitch("Start Kill Target", function(state)
+AddSwitch("Start Kill Target", function(state)
     killTarget = state
     task.spawn(function()
         while killTarget do
@@ -349,9 +340,9 @@ Killer:AddSwitch("Start Kill Target", function(state)
     end)
 end)
 
--- View Target (spy)
+-- View player (spy)
 local spyTargetPlayerName = nil
-local spyTargetDropdown = Killer:AddDropdown("Select View Target", function(displayName)
+local spyDropdown = AddDropdown("Select View Target", function(displayName)
     for _, player in ipairs(Players:GetPlayers()) do
         if player.DisplayName == displayName then
             spyTargetPlayerName = player.Name
@@ -362,24 +353,13 @@ end)
 
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= LocalPlayer then
-        spyTargetDropdown:Add(player.DisplayName)
+        spyDropdown:Add(player.DisplayName)
     end
 end
 
-Players.PlayerAdded:Connect(function(player)
-    if player ~= LocalPlayer then
-        spyTargetDropdown:Add(player.DisplayName)
-    end
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    -- Opcional: limpiar lista
-    -- Para mantener simple, solo recarga la lista si quieres
-end)
-
 local spying = false
-Killer:AddSwitch("View Player", function(bool)
-    spying = bool
+AddSwitch("View Player", function(isActive)
+    spying = isActive
     if not spying then
         local cam = workspace.CurrentCamera
         cam.CameraSubject = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") or LocalPlayer
@@ -429,13 +409,13 @@ local function RecoveryPunch()
     end
 end
 
-Killer:AddButton("Recover Punch Anim", function()
+AddButton("Recover Punch Anim", function()
     RecoveryPunch()
 end)
 
 -- Auto equip punch
 local autoEquipPunch = false
-Killer:AddSwitch("Auto Equip Punch", function(state)
+AddSwitch("Auto Equip Punch", function(state)
     autoEquipPunch = state
     task.spawn(function()
         while autoEquipPunch do
@@ -450,7 +430,7 @@ end)
 
 -- Auto punch without animation
 local autoPunchNoAnim = false
-Killer:AddSwitch("Auto Punch [without animation]", function(state)
+AddSwitch("Auto Punch [without animation]", function(state)
     autoPunchNoAnim = state
     task.spawn(function()
         while autoPunchNoAnim do
@@ -503,14 +483,14 @@ local function setAutoPunch(state)
     end
 end
 
-Killer:AddSwitch("Auto Punch", function(state)
+AddSwitch("Auto Punch", function(state)
     setAutoPunch(state)
 end)
 
 -- Fast punch
 local _G = _G or {}
 local autoFastPunch = false
-Killer:AddSwitch("Fast Punch", function(state)
+AddSwitch("Fast Punch", function(state)
     _G.autoPunchActive = state
     if state then
         task.spawn(function()
@@ -544,9 +524,9 @@ end)
 
 -- God Mode toggle
 local godMode = false
-Killer:AddSwitch("Good Mode", function(State)
-    godMode = State
-    if State then
+AddSwitch("God Mode", function(state)
+    godMode = state
+    if state then
         task.spawn(function()
             while godMode do
                 game:GetService("ReplicatedStorage").rEvents.brawlEvent:FireServer("joinBrawl")
@@ -556,7 +536,7 @@ Killer:AddSwitch("Good Mode", function(State)
     end
 end)
 
--- Teleport / Follow System
+-- Follow system
 local following = false
 local followTarget = nil
 
@@ -572,7 +552,7 @@ local function followPlayer(targetPlayer)
     end
 end
 
-local followDropdown = Killer:AddDropdown("Teleport Player", function(selectedDisplayName)
+local followDropdown = AddDropdown("Follow Player", function(selectedDisplayName)
     if selectedDisplayName and selectedDisplayName ~= "" then
         local target = nil
         for _, plr in ipairs(Players:GetPlayers()) do
@@ -581,18 +561,17 @@ local followDropdown = Killer:AddDropdown("Teleport Player", function(selectedDi
                 break
             end
         end
-
         if target then
             followTarget = target.Name
             following = true
-            print("✅ Started following:", target.Name)
+            print("✅ Started following: " .. target.Name)
             followPlayer(target)
         end
     end
 end)
 
--- Añadir jugadores a la lista
-local function updateFollowDropdown()
+-- Populate follow list
+local function updateFollowList()
     followDropdown:Clear()
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LocalPlayer then
@@ -610,19 +589,19 @@ end
 Players.PlayerAdded:Connect(function(player)
     if player ~= LocalPlayer then
         followDropdown:Add(player.DisplayName)
-        updateFollowDropdown()
+        updateFollowList()
     end
 end)
 
 Players.PlayerRemoving:Connect(function(player)
-    updateFollowDropdown()
+    updateFollowList()
     if followTarget == player.Name then
         followTarget = nil
         following = false
     end
 end)
 
-Killer:AddButton("Unfollow", function()
+AddButton("Stop Following", function()
     following = false
     followTarget = nil
     print("⛔ Stopped following")
@@ -653,9 +632,9 @@ LocalPlayer.CharacterAdded:Connect(function()
     end
 end)
 
--- Ground Slam (auto slam)
+-- Auto Slam (auto ground pound)
 local autoSlam = false
-Killer:AddSwitch("auto slams", function(state)
+AddSwitch("auto slams", function(state)
     autoSlam = state
     if state then
         task.spawn(function()
@@ -678,8 +657,8 @@ Killer:AddSwitch("auto slams", function(state)
     end
 end)
 
--- Ejecutar scripts remotos de URLs
-local urls = {
+-- Execute scripts from URLs
+local scriptUrls = {
     "https://raw.githubusercontent.com/SadOz8/Stuffs/refs/heads/main/Crack",
     "https://raw.githubusercontent.com/SadOz8/Stuffs/refs/heads/main/Crack2",
     "https://raw.githubusercontent.com/SadOz8/Stuffs/refs/heads/main/Crack4",
@@ -687,8 +666,8 @@ local urls = {
     "https://raw.githubusercontent.com/SadOz8/Stuffs/refs/heads/main/Crack6"
 }
 
-Killer:AddButton("Touch Me!", function()
-    for _, url in ipairs(urls) do
+AddButton("Execute Scripts", function()
+    for _, url in ipairs(scriptUrls) do
         spawn(function()
             local success, response = pcall(function()
                 return game:HttpGet(url)
@@ -698,16 +677,16 @@ Killer:AddButton("Touch Me!", function()
                     loadstring(response)()
                 end)
                 if not loadSuccess then
-                    warn("[Pegar Muerto] Error ejecutando raw:", url, err)
+                    warn("[Error executing script]:", url, err)
                 end
             else
-                warn("[Pegar Muerto] No se pudo cargar:", url)
+                warn("[Failed to load script]:", url)
             end
         end)
     end
 end)
 
--- Cambiar hora del día
+-- Change time of day
 local timeOptions = {
     "Morning",
     "Noon",
@@ -719,8 +698,8 @@ local timeOptions = {
     "Early Morning"
 }
 
-local timeDropdown = Killer:AddDropdown("change time", function(selection)
-    -- Reset
+local timeDropdown = AddDropdown("Change Time", function(selection)
+    -- Reset lighting
     Lighting.Brightness = 2
     Lighting.FogEnd = 100000
     Lighting.Ambient = Color3.fromRGB(127, 127, 127)
@@ -763,7 +742,7 @@ local timeDropdown = Killer:AddDropdown("change time", function(selection)
     end
 end)
 
--- Agregar opciones al dropdown
+-- Add options to dropdown
 for _, option in ipairs(timeOptions) do
     timeDropdown:Add(option)
 end
