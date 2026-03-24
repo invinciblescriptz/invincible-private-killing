@@ -10,20 +10,21 @@ if not success or not library then
     return
 end
 
--- Create the main window
+-- Create Main Window
 local window = library:AddWindow("INV Public || Made by Invincible ||", {
     main_color = Color3.fromRGB(0, 0, 0),
     min_size = Vector2.new(520, 660),
     can_resize = false,
 })
 
--- Create tabs
+-- Tabs
 local tabInfo = window:AddTab("Information")
 local tabMain = window:AddTab("Main")
 local tabTeleport = window:AddTab("Teleport")
 local tabRebirth = window:AddTab("Rebirth")
+local tabKill = window:AddTab("Kill") -- Added Kill tab
 
--- Info tab
+-- Info tab content
 tabInfo:AddLabel("Invincible likes Ninja Turtles").TextSize = 24
 tabInfo:AddLabel("Made by Invincible").TextSize = 22
 tabInfo:AddLabel("More features coming 🔜").TextSize = 22
@@ -44,7 +45,7 @@ if not muscleEvent then
     return
 end
 
-getgenv().NexusRunning = true
+getgenv().NexusRunning = true -- Global flag for script running
 
 -- State variables
 local states = {
@@ -58,6 +59,7 @@ local states = {
     AutoSlam = false,
 }
 
+-- Additional globals
 getgenv().rockFarmActive = false
 getgenv().selectedRockDurability = 0
 getgenv().AutoSpinWheel = false
@@ -65,7 +67,7 @@ getgenv().FastPackFarm = false
 getgenv().AutoTPMuscleKing = false
 getgenv().PositionLocked = false
 
--- Helpers
+-- Helper functions
 local function getHRP()
     local char = LP.Character
     return char and char:FindFirstChild("HumanoidRootPart")
@@ -73,7 +75,9 @@ end
 
 local function tpTo(pos)
     local hrp = getHRP()
-    if hrp then hrp.CFrame = CFrame.new(pos) end
+    if hrp then
+        hrp.CFrame = CFrame.new(pos)
+    end
 end
 
 local function safeEquip(toolName)
@@ -87,7 +91,7 @@ local function safeEquip(toolName)
     end)
 end
 
--- Auto-reps
+-- Auto-Rep (repetition) logic
 local function startAutoRep(toolName, key)
     task.spawn(function()
         while states[key] and getgenv().NexusRunning do
@@ -100,7 +104,7 @@ local function startAutoRep(toolName, key)
             end)
             task.wait(0.1)
         end
-        -- cleanup
+        -- Cleanup: unequip tool
         pcall(function()
             local t = LP.Character and LP.Character:FindFirstChild(toolName)
             if t then t.Parent = LP.Backpack end
@@ -142,7 +146,7 @@ local function toggleAntiAFK(enabled)
     end
 end
 
--- Rock Farm loop
+-- Rock Farm Loop
 task.spawn(function()
     while getgenv().NexusRunning do
         if getgenv().rockFarmActive and getgenv().selectedRockDurability > 0 then
@@ -183,10 +187,11 @@ task.spawn(function()
 end)
 
 -- ====================
--- Main Tab controls
+-- Main Tab Controls
 local toolsFolder = tabMain:AddFolder("Tools")
 local rockFarmFolder = tabMain:AddFolder("Rock Farm")
 
+-- Auto features toggles
 toolsFolder:AddSwitch("Auto Pushups", function(s)
     states.AutoPushups = s
     if s then startAutoRep("Pushups", "AutoPushups") end
@@ -234,7 +239,7 @@ tabInfo:AddButton("Unlock Auto-Lift Gamepass", function()
     end)
 end)
 
--- Teleport buttons
+-- Teleport Buttons
 local teleportLocations = {
     {"Spawn / Safe", Vector3.new(-6, 5, -196)},
     {"Secret Area", Vector3.new(1947, 2, 6191)},
@@ -278,54 +283,53 @@ local rockFarmOptions = {
     {"Farm Muscle King Gym Rock (5M)", 5000000},
     {"Farm Ancient Jungle Rock (10M)", 10000000}
 }
+
 for _, option in ipairs(rockFarmOptions) do
     local name, dur = option[1], option[2]
     rockFarmFolder:AddSwitch(name, function(s) setRockFarm(dur, s) end)
 end
+
 rockFarmFolder:AddButton("Stop All Rock Farming", function()
     getgenv().rockFarmActive = false
     getgenv().selectedRockDurability = 0
 end)
 
--- Rock Farming Loop
+-- Rock Farming Loop (additional bug fix)
 task.spawn(function()
     while getgenv().NexusRunning do
-        if not getgenv().rockFarmActive or getgenv().selectedRockDurability <= 0 then
-            task.wait(0.8)
-            continue
-        end
-        pcall(function()
-            local char = LocalPlayer.Character
-            if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
-                task.wait(1.4)
-                return
-            end
-            local dur = LocalPlayer:FindFirstChild("Durability")
-            if not dur or dur.Value < getgenv().selectedRockDurability then
-                task.wait(0.6)
-                return
-            end
-            safeEquipTool("Punch")
-            local machinesFolder = Workspace:FindFirstChild("machinesFolder")
-            if machinesFolder then
-                for _, obj in pairs(machinesFolder:GetDescendants()) do
-                    if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == getgenv().selectedRockDurability then
-                        local rock = obj.Parent:FindFirstChild("Rock")
-                        if rock and rock:IsA("BasePart") then
-                            local hrp = char:FindFirstChild("HumanoidRootPart")
-                            if hrp then
-                                if char:FindFirstChild("RightHand") then
-                                    firetouchinterest(rock, hrp, 0)
-                                    task.wait(0.03)
-                                    firetouchinterest(rock, hrp, 1)
-                                end
-                                if char:FindFirstChild("LeftHand") then
-                                    firetouchinterest(rock, hrp, 0)
-                                    task.wait(0.03)
-                                    firetouchinterest(rock, hrp, 1)
-                                end
-                                -- Punch
-                                if muscleEvent then
+        if getgenv().rockFarmActive and getgenv().selectedRockDurability > 0 then
+            pcall(function()
+                local char = LP.Character
+                local h = char and char:FindFirstChildOfClass("Humanoid")
+                if not h or h.Health <= 0 then task.wait(1.4) return end
+
+                local dur = LP:FindFirstChild("Durability")
+                if not dur or dur.Value < getgenv().selectedRockDurability then
+                    task.wait(0.6)
+                    return
+                end
+
+                safeEquip("Punch")
+
+                local folder = WS:FindFirstChild("machinesFolder")
+                if folder then
+                    for _, obj in pairs(folder:GetDescendants()) do
+                        if obj.Name == "neededDurability" and obj:IsA("IntValue") and obj.Value == getgenv().selectedRockDurability then
+                            local rock = obj.Parent:FindFirstChild("Rock")
+                            if rock and rock:IsA("BasePart") then
+                                local hrp = getHRP()
+                                if hrp then
+                                    if char:FindFirstChild("RightHand") then
+                                        firetouchinterest(rock, hrp, 0)
+                                        task.wait(0.03)
+                                        firetouchinterest(rock, hrp, 1)
+                                    end
+                                    if char:FindFirstChild("LeftHand") then
+                                        firetouchinterest(rock, hrp, 0)
+                                        task.wait(0.03)
+                                        firetouchinterest(rock, hrp, 1)
+                                    end
+                                    -- Punch
                                     muscleEvent:FireServer("punch", "leftHand")
                                     muscleEvent:FireServer("punch", "rightHand")
                                 end
@@ -333,17 +337,19 @@ task.spawn(function()
                         end
                     end
                 end
-            end
-        end)
+            end)
+        end
         task.wait(0.18)
     end
 end)
 
-==========
--- Rebirth tab
+-- ====================
+-- Rebirth Tab Controls
+
 local autoRebirth = false
 local autoSize = false
 
+-- Auto Rebirth
 tabRebirth:AddSwitch("Auto Rebirth (Infinite)", function(val)
     autoRebirth = val
     if val then
@@ -358,6 +364,7 @@ tabRebirth:AddSwitch("Auto Rebirth (Infinite)", function(val)
     end
 end)
 
+-- Auto Size
 tabRebirth:AddSwitch("Auto Size 1", function(val)
     autoSize = val
     if val then
@@ -372,6 +379,7 @@ tabRebirth:AddSwitch("Auto Size 1", function(val)
     end
 end)
 
+-- Auto TP to Muscle King
 tabRebirth:AddSwitch("Auto TP → Muscle King", function(v)
     getgenv().AutoTPMuscleKing = v
     if v then
@@ -384,7 +392,7 @@ tabRebirth:AddSwitch("Auto TP → Muscle King", function(v)
     end
 end)
 
--- Pack Farming (fast)
+-- Pack Farming (Fast)
 tabRebirth:AddLabel("Pack Farming").TextSize = 22
 tabRebirth:AddSwitch("Fast Rebirth Pack Farm", function(v)
     getgenv().FastPackFarm = v
@@ -410,7 +418,7 @@ tabRebirth:AddSwitch("Fast Rebirth Pack Farm", function(v)
                     task.wait(0.2)
 
                     local need = 10000 + 5000 * leader.Rebirths.Value
-                    if LP.ultimatesFolder:FindFirstChild("Golden Rebirth") then
+                    if LP:FindFirstChild("ultimatesFolder") and LP.ultimatesFolder:FindFirstChild("Golden Rebirth") then
                         need = math.floor(need * (1 - LP.ultimatesFolder["Golden Rebirth"].Value * 0.1))
                     end
 
@@ -451,13 +459,18 @@ tabRebirth:AddSwitch("Fast Rebirth Pack Farm", function(v)
     end
 end)
 
--- Optimization buttons
+-- Optimization Buttons
 tabRebirth:AddButton("Full Optimization", function()
     pcall(function()
-        for _, g in ipairs(LP.PlayerGui:GetChildren()) do if g:IsA("ScreenGui") then g:Destroy() end end
+        -- Remove GUI
+        for _, g in ipairs(LP.PlayerGui:GetChildren()) do
+            if g:IsA("ScreenGui") then g:Destroy() end
+        end
+        -- Remove particles & lights
         for _, o in ipairs(WS:GetDescendants()) do
             if o:IsA("ParticleEmitter") or o:IsA("PointLight") then o:Destroy() end
         end
+        -- Skybox & Lighting
         for _, s in ipairs(Lighting:GetChildren()) do
             if s:IsA("Sky") then s:Destroy() end
         end
@@ -487,8 +500,12 @@ tabRebirth:AddButton("Anti-Lag (Performance)", function()
 end)
 
 -- Quick TPs
-tabRebirth:AddButton("Jungle Squat Area", function() tpTo(Vector3.new(-8371.4, 6.8, 2858.9)) end)
-tabRebirth:AddButton("Jungle Lift Area", function() tpTo(Vector3.new(-8652.9, 29.3, 2089.3)) end)
+tabRebirth:AddButton("Jungle Squat Area", function()
+    tpTo(Vector3.new(-8371.4, 6.8, 2858.9))
+end)
+tabRebirth:AddButton("Jungle Lift Area", function()
+    tpTo(Vector3.new(-8652.9, 29.3, 2089.3))
+end)
 
 -- Position Lock
 local lockConn
@@ -512,17 +529,34 @@ tabRebirth:AddSwitch("Lock Position", function(en)
     end
 end)
 
--- =========================
--- Complete "Killer" tab controls
--- =========================
+-- ========================
+-- Killer Tab Features
+-- ========================
 
-local KillerTab = window:AddTab("Kill") -- Create the tab for killer features
+local AutoGoodKarma = false
+local AutoBadKarma = false
+local playerWhitelist = {}
+local SelectedTarget = nil
+local spying = false
+local ViewTargetName = nil
 
--- Add features to "Kill" tab
-local Kill = KillerTab
+local function updateTargetDropdown()
+    local options = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LP then
+            table.insert(options, player.DisplayName)
+        end
+    end
+    -- Clear existing and add new options
+    viewDropdown:Clear()
+    for _, name in ipairs(options) do
+        viewDropdown:Add(name)
+    end
+end
 
 -- Auto Good Karma
-Kill:AddSwitch("Auto Good Karma", function(state)
+local killTab = window:AddTab("Kill")
+killTab:AddSwitch("Auto Good Karma", function(state)
     AutoGoodKarma = state
     task.spawn(function()
         while AutoGoodKarma do
@@ -554,7 +588,7 @@ Kill:AddSwitch("Auto Good Karma", function(state)
 end)
 
 -- Auto Bad Karma
-Kill:AddSwitch("Auto Bad Karma", function(state)
+killTab:AddSwitch("Auto Bad Karma", function(state)
     AutoBadKarma = state
     task.spawn(function()
         while AutoBadKarma do
@@ -586,8 +620,7 @@ Kill:AddSwitch("Auto Bad Karma", function(state)
 end)
 
 -- Auto Whitelist friends
-local playerWhitelist = {}
-Kill:AddSwitch("Auto Whitelist Friends", function(state)
+local function setupWhitelist(state)
     if state then
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= LP and LP:IsFriendsWith(player.UserId) then
@@ -600,28 +633,33 @@ Kill:AddSwitch("Auto Whitelist Friends", function(state)
             end
         end)
     else
-        for name in pairs(playerWhitelist) do
-            playerWhitelist[name] = nil
+        for k in pairs(playerWhitelist) do
+            playerWhitelist[k] = nil
         end
     end
+end
+
+killTab:AddSwitch("Auto Whitelist Friends", function(state)
+    setupWhitelist(state)
 end)
 
-Kill:AddTextBox("Whitelist", function(text)
+killTab:AddTextBox("Whitelist", function(text)
     local target = Players:FindFirstChild(text)
     if target then
         playerWhitelist[target.Name] = true
     end
 end)
 
-Kill:AddTextBox("UnWhitelist", function(text)
+killTab:AddTextBox("UnWhitelist", function(text)
     local target = Players:FindFirstChild(text)
     if target then
         playerWhitelist[target.Name] = nil
     end
 end)
 
+-- Auto Kill (loop)
 local autoKill = false
-Kill:AddSwitch("Auto Kill", function(state)
+killTab:AddSwitch("Auto Kill", function(state)
     autoKill = state
     task.spawn(function()
         while autoKill do
@@ -654,9 +692,9 @@ Kill:AddSwitch("Auto Kill", function(state)
     end)
 end)
 
--- Target dropdown for specific target
+-- Targeting specific player
 local targetPlayerNames = {}
-local targetDropdown = Kill:AddDropdown("Select Target", function(displayName)
+local targetDropdown = killTab:AddDropdown("Select Target", function(displayName)
     for _, player in ipairs(Players:GetPlayers()) do
         if player.DisplayName == displayName then
             if not table.find(targetPlayerNames, player.Name) then
@@ -673,20 +711,22 @@ local function updateTargetDropdown()
     local options = {}
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= LP then
-            options[#options + 1] = player.DisplayName
+            table.insert(options, player.DisplayName)
         end
     end
+    -- Clear existing options
     targetDropdown:Clear()
     for _, name in ipairs(options) do
         targetDropdown:Add(name)
     end
 end
 
--- Refresh player list dynamically
+-- Refresh listener for player list
 Players.PlayerAdded:Connect(function()
     updateTargetDropdown()
 end)
-Players.PlayerRemoving:Connect(function()
+
+Players.PlayerRemoving:Connect(function(player)
     updateTargetDropdown()
     -- Remove from target list if present
     for i = #targetPlayerNames, 1, -1 do
@@ -697,7 +737,7 @@ Players.PlayerRemoving:Connect(function()
 end)
 
 local killTargetActive = false
-Kill:AddSwitch("Start Kill Target", function(state)
+killTab:AddSwitch("Start Kill Target", function(state)
     killTargetActive = state
     task.spawn(function()
         while killTargetActive do
@@ -729,15 +769,16 @@ Kill:AddSwitch("Start Kill Target", function(state)
     end)
 end)
 
--- View and follow other players
+-- View & follow players
 local ViewDropdownItems = {}
 local ViewTargetName = nil
 local spying = false
 
-local viewDropdown = Kill:AddDropdown("Select View Target", function(value)
+local viewDropdown = killTab:AddDropdown("Select View Target", function(value)
     ViewTargetName = value
 end)
 
+-- Populate dropdown initially
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= LP then
         viewDropdown:Add(player.DisplayName)
@@ -745,6 +786,7 @@ for _, player in ipairs(Players:GetPlayers()) do
     end
 end
 
+-- Update dropdown on player join/leave
 Players.PlayerAdded:Connect(function(player)
     if player ~= LP then
         viewDropdown:Add(player.DisplayName)
@@ -755,10 +797,10 @@ end)
 Players.PlayerRemoving:Connect(function(player)
     if player ~= LP then
         ViewDropdownItems[player.Name] = nil
-        -- Rebuild dropdown
+        -- Rebuild dropdown options
         local options = {}
         for _, display in pairs(ViewDropdownItems) do
-            options[#options + 1] = display
+            table.insert(options, display)
         end
         viewDropdown:Clear()
         for _, displayName in ipairs(options) do
@@ -767,7 +809,7 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Follow selected player
+-- Follow selected target
 local function followPlayer(target)
     local myChar = LP.Character
     local targetChar = target.Character
@@ -783,7 +825,7 @@ end
 local following = false
 local followTarget = nil
 
-Kill:AddSwitch("View Player", function(state)
+killTab:AddSwitch("View Player", function(state)
     spying = state
     if not spying then
         local cam = workspace.CurrentCamera
@@ -805,7 +847,7 @@ Kill:AddSwitch("View Player", function(state)
 end)
 
 -- Button to stop following
-Kill:AddButton("Stop Following", function()
+killTab:AddButton("Stop Following", function()
     spying = false
     print("Stopped following")
 end)
@@ -824,7 +866,7 @@ task.spawn(function()
 end)
 
 -- Remove punch animation
-Kill:AddButton("Remove Punch Anim", function()
+killTab:AddButton("Remove Punch Anim", function()
     local character = LP.Character
     if character and character:FindFirstChild("Humanoid") then
         local humanoid = character:FindFirstChild("Humanoid")
@@ -838,8 +880,4 @@ Kill:AddButton("Remove Punch Anim", function()
     end
 end)
 
--- Additional features like changing size, time, etc., can be added similarly.
-
--- ========================
--- END: All "Killer" tab features are now added.
--- ========================
+-- End of script
