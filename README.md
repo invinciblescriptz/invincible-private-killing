@@ -22,7 +22,6 @@ local tabInfo = window:AddTab("Information")
 local tabMain = window:AddTab("Main")
 local tabTeleport = window:AddTab("Teleport")
 local tabRebirth = window:AddTab("Rebirth")
-local tabKill = window:AddTab("Kill") -- Added Kill tab
 
 -- Info tab content
 tabInfo:AddLabel("Invincible likes Ninja Turtles").TextSize = 24
