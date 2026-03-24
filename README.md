@@ -1,4 +1,5 @@
--- Create a UI window
+-- Place this as a LocalScript inside StarterPlayer > StarterPlayerScripts
+
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "MyFeatureUI"
@@ -19,70 +20,37 @@ title.TextSize = 20
 
 local yOffset = 60
 
--- Toggle: Auto Punch (Fast)
-local punchToggle = Instance.new("TextButton", frame)
-punchToggle.Size = UDim2.new(0, 300, 0, 40)
-punchToggle.Position = UDim2.new(0, 20, 0, yOffset)
-punchToggle.Text = "Auto Punch (Fast): OFF"
-punchToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-punchToggle.TextColor3 = Color3.new(1, 1, 1)
+local function createButton(text, yPos)
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(0, 300, 0, 40)
+    btn.Position = UDim2.new(0, 20, 0, yPos)
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    return btn
+end
 
--- Toggle: Auto Kill
-local killToggle = Instance.new("TextButton", frame)
-killToggle.Size = UDim2.new(0, 300, 0, 40)
-killToggle.Position = UDim2.new(0, 20, 0, yOffset + 50)
-killToggle.Text = "Auto Kill: OFF"
-killToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-killToggle.TextColor3 = Color3.new(1, 1, 1)
+local function createInput(placeholder, yPos)
+    local input = Instance.new("TextBox", frame)
+    input.Size = UDim2.new(0, 250, 0, 40)
+    input.Position = UDim2.new(0, 350, 0, yPos)
+    input.PlaceholderText = placeholder
+    input.Text = ""
+    input.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    input.TextColor3 = Color3.new(1, 1, 1)
+    return input
+end
 
--- Toggle: Auto Good Karma
-local goodKarmaToggle = Instance.new("TextButton", frame)
-goodKarmaToggle.Size = UDim2.new(0, 300, 0, 40)
-goodKarmaToggle.Position = UDim2.new(0, 20, 0, yOffset + 100)
-goodKarmaToggle.Text = "Auto Good Karma: OFF"
-goodKarmaToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-goodKarmaToggle.TextColor3 = Color3.new(1, 1, 1)
+-- Create buttons and input fields
+local punchToggle = createButton("Auto Punch (Fast): OFF", yOffset)
+local killToggle = createButton("Auto Kill: OFF", yOffset + 50)
+local goodKarmaToggle = createButton("Auto Good Karma: OFF", yOffset + 100)
+local badKarmaToggle = createButton("Auto Bad Karma: OFF", yOffset + 150)
+local liftGPButton = createButton("Auto Lift Gamepass", yOffset + 200)
 
--- Toggle: Auto Bad Karma
-local badKarmaToggle = Instance.new("TextButton", frame)
-badKarmaToggle.Size = UDim2.new(0, 300, 0, 40)
-badKarmaToggle.Position = UDim2.new(0, 20, 0, yOffset + 150)
-badKarmaToggle.Text = "Auto Bad Karma: OFF"
-badKarmaToggle.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-badKarmaToggle.TextColor3 = Color3.new(1, 1, 1)
-
--- Button: Auto Lift Gamepass
-local liftGPButton = Instance.new("TextButton", frame)
-liftGPButton.Size = UDim2.new(0, 300, 0, 40)
-liftGPButton.Position = UDim2.new(0, 20, 0, yOffset + 200)
-liftGPButton.Text = "Auto Lift Gamepass"
-liftGPButton.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-liftGPButton.TextColor3 = Color3.new(1,1,1)
-
--- Input: Enter Player Name for Follow
-local followInput = Instance.new("TextBox", frame)
-followInput.Size = UDim2.new(0, 250, 0, 40)
-followInput.Position = UDim2.new(0, 350, 0, yOffset + 50)
-followInput.PlaceholderText = "Enter Player Name"
-followInput.Text = ""
-followInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-followInput.TextColor3 = Color3.new(1,1,1)
-
--- Button: Follow Player
-local followBtn = Instance.new("TextButton", frame)
-followBtn.Size = UDim2.new(0, 250, 0, 40)
-followBtn.Position = UDim2.new(0, 350, 0, yOffset + 100)
-followBtn.Text = "Follow Player"
-followBtn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-followBtn.TextColor3 = Color3.new(1,1,1)
-
--- Button: Stop Following
-local stopFollowBtn = Instance.new("TextButton", frame)
-stopFollowBtn.Size = UDim2.new(0, 250, 0, 40)
-stopFollowBtn.Position = UDim2.new(0, 350, 0, yOffset + 150)
-stopFollowBtn.Text = "Stop Following"
-stopFollowBtn.BackgroundColor3 = Color3.fromRGB(0, 50, 0)
-stopFollowBtn.TextColor3 = Color3.new(1,1,1)
+local followInput = createInput("Enter Player Name", yOffset + 50)
+local followBtn = createButton("Follow Player", yOffset + 100)
+local stopFollowBtn = createButton("Stop Following", yOffset + 150)
 
 -- Variables
 local autoPunch = false
@@ -104,7 +72,7 @@ local function getHRP(character)
     return nil
 end
 
--- Toggle handlers
+-- Button click handlers
 punchToggle.MouseButton1Click:Connect(function()
     autoPunch = not autoPunch
     punchToggle.Text = "Auto Punch (Fast): " .. (autoPunch and "ON" or "OFF")
@@ -125,7 +93,6 @@ badKarmaToggle.MouseButton1Click:Connect(function()
     badKarmaToggle.Text = "Auto Bad Karma: " .. (autoBadKarma and "ON" or "OFF")
 end)
 
--- Auto Lift Gamepass button
 liftGPButton.MouseButton1Click:Connect(function()
     pcall(function()
         local gpFolder = game.ReplicatedStorage:FindFirstChild("gamepassIds")
@@ -145,7 +112,6 @@ liftGPButton.MouseButton1Click:Connect(function()
     end)
 end)
 
--- Follow Player
 followBtn.MouseButton1Click:Connect(function()
     local name = followInput.Text
     if name ~= "" then
@@ -155,7 +121,6 @@ followBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Stop Following
 stopFollowBtn.MouseButton1Click:Connect(function()
     spying = false
     workspace.CurrentCamera.CameraSubject = LP.Character and LP.Character:FindFirstChild("Humanoid") or LP
@@ -234,7 +199,7 @@ spawn(function()
             end
         end
 
-        -- Auto Karma logic (auto touch interactions)
+        -- Auto Karma (Good)
         if autoGoodKarma then
             for _, target in pairs(Players:GetPlayers()) do
                 if target ~= LP and target.Character then
@@ -257,6 +222,7 @@ spawn(function()
             end
         end
 
+        -- Auto Karma (Bad)
         if autoBadKarma then
             for _, target in pairs(Players:GetPlayers()) do
                 if target ~= LP and target.Character then
