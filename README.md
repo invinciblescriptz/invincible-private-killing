@@ -1,6 +1,6 @@
 local ScriptLibrary = loadstring(game:HttpGet("https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X", true))()
 local MainWindow = ScriptLibrary:AddWindow(string.format("invincible private killing || Hello %s", game.Players.LocalPlayer.DisplayName), {
-    ["min_size"] = Vector2.new(400, 870),
+    ["min_size"] = Vector2.new(660, 520),
     ["can_resize"] = true,
     ["main_color"] = Color3.fromRGB(255, 192, 203) -- Pink color
 })
@@ -9,6 +9,22 @@ local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 
 local window = MainWindow -- Adjusted for consistency
+
+-- Anti AFK
+local function toggleAntiAfk(state)
+    states.AntiAFK = state
+    if state then
+        if antiAfkConn then return end
+        antiAfkConn = LocalPlayer.Idled:Connect(function()
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+            end)
+        end)
+    else
+        if antiAfkConn then antiAfkConn:Disconnect() antiAfkConn = nil end
+    end
+end
 
 local KillerTab = window:AddTab("Kill") -- Create the tab for killer features
 
@@ -337,3 +353,98 @@ end)
 -- ========================
 -- END: All "Killer" tab features are now added.
 -- ========================
+
+local killmethodTab = window:AddTab("kill method")
+
+killmethodTab:AddSwitch("Fast Punch", function(s)
+    states.FastPunch = s
+    if s then
+        task.spawn(function()
+            while states.FastPunch and getgenv().NexusRunning do
+                pcall(function()
+                    if muscleEvent then
+                        muscleEvent:FireServer("punch", "rightHand")
+                        muscleEvent:FireServer("punch", "leftHand")
+                    end
+                    local char = LocalPlayer.Character
+                    if char then
+                        local punch = char:FindFirstChild("Punch") or LocalPlayer.Backpack:FindFirstChild("Punch")
+                        if punch and punch.Parent ~= char then
+                            char.Humanoid:EquipTool(punch)
+                        end
+                        if punch and punch.Parent == char then
+                            local atk = punch:FindFirstChild("attackTime")
+                            if atk and atk:IsA("NumberValue") then atk.Value = 0.01 end
+                            punch:Activate()
+                        end
+                    end
+                end)
+                task.wait(0.085)
+            end
+        end)
+    end
+end)
+
+local Lighting = game:GetService("Lighting")
+
+-- Tabla para registrar los tiempos disponibles
+local timeOptions = {
+    "Morning",
+    "Noon",
+    "Afternoon",
+    "Sunset",
+    "Night",
+    "Midnight",
+    "Dawn",
+    "Early Morning"
+}
+
+-- Dropdown
+local timeDropdown = killmethodTab:AddDropdown("change time", function(selection)
+    -- Reset antes de aplicar
+    Lighting.Brightness = 2
+    Lighting.FogEnd = 100000
+    Lighting.Ambient = Color3.fromRGB(127,127,127)
+
+    if selection == "Morning" then
+        Lighting.ClockTime = 6
+        Lighting.Brightness = 2
+        Lighting.Ambient = Color3.fromRGB(200, 200, 255)
+    elseif selection == "Noon" then
+        Lighting.ClockTime = 12
+        Lighting.Brightness = 3
+        Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+    elseif selection == "Afternoon" then
+        Lighting.ClockTime = 16
+        Lighting.Brightness = 2.5
+        Lighting.Ambient = Color3.fromRGB(255, 220, 180)
+    elseif selection == "Sunset" then
+        Lighting.ClockTime = 18
+        Lighting.Brightness = 2
+        Lighting.Ambient = Color3.fromRGB(255, 150, 100)
+        Lighting.FogEnd = 500
+    elseif selection == "Nigth" then
+        Lighting.ClockTime = 20
+        Lighting.Brightness = 1.5
+        Lighting.Ambient = Color3.fromRGB(100, 100, 150)
+        Lighting.FogEnd = 800
+    elseif selection == "Midnight" then
+        Lighting.ClockTime = 0
+        Lighting.Brightness = 1
+        Lighting.Ambient = Color3.fromRGB(50, 50, 100)
+        Lighting.FogEnd = 400
+    elseif selection == "Dawn" then
+        Lighting.ClockTime = 4
+        Lighting.Brightness = 1.8
+        Lighting.Ambient = Color3.fromRGB(180, 180, 220)
+    elseif selection == "Early Morning" then
+        Lighting.ClockTime = 2
+        Lighting.Brightness = 1.2
+        Lighting.Ambient = Color3.fromRGB(100, 120, 180)
+    end
+end)
+
+-- Agregar opciones al dropdown dinámicamente
+for _, option in ipairs(timeOptions) do
+    timeDropdown:Add(option)
+end
