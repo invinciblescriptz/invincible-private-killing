@@ -1,248 +1,362 @@
--- Place this in a LocalScript under StarterPlayer -> StarterPlayerScripts
-
+--// Muscle Legends OP Kill Tab - Fixed & Optimized 2026
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
 local LocalPlayer = Players.LocalPlayer
+local muscleEvent = LocalPlayer:WaitForChild("muscleEvent")
 
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+--// GUI Setup (replace "window" with your actual UI library)
 local gui = Instance.new("ScreenGui")
-gui.Name = "MyFeatureUI"
-gui.Parent = PlayerGui
+gui.Name = "MuscleKillUI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-local mainFrame = Instance.new("Frame", gui)
-mainFrame.Size = UDim2.new(0, 600, 0, 700)
-mainFrame.Position = UDim2.new(0.5, -300, 0.5, -350)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-mainFrame.BorderSizePixel = 0
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 520, 0, 600)
+frame.Position = UDim2.new(0.5, -260, 0.5, -300)
+frame.BackgroundColor3 = Color3.fromRGB(0, 10, 0)
+frame.BorderSizePixel = 0
 
-local function makeDraggable(frame)
-    local dragging = false
-    local dragStart, startPos
-    frame.InputBegan:Connect(function(input)
+local function makeDraggable(f)
+    local dragging, dragStart, startPos
+    f.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStart = input.Position
-            startPos = frame.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
+            startPos = f.Position
         end
     end)
     UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
-            frame.Position = UDim2.new(
-                startPos.X.Scale,
-                startPos.X.Offset + delta.X,
-                startPos.Y.Scale,
-                startPos.Y.Offset + delta.Y
-            )
+            f.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
+    f.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    end)
 end
+makeDraggable(frame)
 
-makeDraggable(mainFrame)
+-- Assuming you have a UI library like Linoria / Rayfield / etc.
+local window = --[[ PUT YOUR WINDOW HERE ]] 
+local Killer = window:AddTab("Kill")
 
--- Utility to create foldable sections (optional, kept for clarity)
-local function createFoldableSection(parent, title, yOffset)
-    local headerBtn = Instance.new("TextButton", parent)
-    headerBtn.Size = UDim2.new(1, -20, 0, 30)
-    headerBtn.Position = UDim2.new(0, 10, 0, yOffset)
-    headerBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    headerBtn.Text = "▼ " .. title
-    headerBtn.TextColor3 = Color3.fromRGB(255,255,255)
-    headerBtn.Font = Enum.Font.Merriweather
-    headerBtn.TextSize = 14
-    headerBtn.TextXAlignment = Enum.TextXAlignment.Left
+-- Variables
+local playerWhitelist = {}
+local targetPlayerNames = {}
+local following = false
+local followTarget = nil
+local targetPlayerName = nil
 
-    local contentFrame = Instance.new("Frame", parent)
-    contentFrame.Size = UDim2.new(1, -20, 0, 0)
-    contentFrame.Position = UDim2.new(0, 10, 0, yOffset + 30)
-    contentFrame.BackgroundTransparency = 1
-    contentFrame.BorderSizePixel = 0
+--// Pet Selector
+Killer:AddLabel("Select Pet (Damage / Durability)", {TextSize = 18, Font = Enum.Font.Merriweather})
 
-    local function toggle()
-        if contentFrame.Visible then
-            contentFrame.Visible = false
-            headerBtn.Text = "► " .. title
-        else
-            contentFrame.Visible = true
-            headerBtn.Text = "▼ " .. title
-        end
-    end
-
-    headerBtn.MouseButton1Click:Connect(toggle)
-
-    return contentFrame
-end
-
--- Create foldable sections
-local petsSection = createFoldableSection(mainFrame, "Pets", 10)
-local karmaSection = createFoldableSection(mainFrame, "Karma", 260)
-local killSection = createFoldableSection(mainFrame, "Kill System", 510)
-local followSection = createFoldableSection(mainFrame, "Follow System", 760)
-local timeSection = createFoldableSection(mainFrame, "Lighting Time", 1010)
-
--- ========================
--- Add buttons to toggle features
-
--- Helper to create toggle buttons
-local function createFeatureButton(parent, label, callback)
-    local btn = Instance.new("TextButton", parent)
-    btn.Size = UDim2.new(0, 200, 0, 30)
-    btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-    btn.Text = label
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Font = Enum.Font.Merriweather
-    btn.TextSize = 14
-
-    btn.MouseButton1Click:Connect(callback)
-    return btn
-end
-
--- Pets: Equip selected pet
-local function setupPetsButtons()
-    local btn = createFeatureButton(petsSection, "Equip Pet (Random)")
-    btn.MouseButton1Click:Connect(function()
-        local petsFolder = LocalPlayer:WaitForChild("petsFolder")
-        for _, folder in pairs(petsFolder:GetChildren()) do
+local petDropdown = Killer:AddDropdown("Select Pet", function(petName)
+    -- Unequip all
+    pcall(function()
+        for _, folder in pairs(LocalPlayer.petsFolder:GetChildren()) do
             if folder:IsA("Folder") then
                 for _, pet in pairs(folder:GetChildren()) do
-                    game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("unequipPet", pet)
+                    ReplicatedStorage.rEvents.equipPetEvent:FireServer("unequipPet", pet)
                 end
             end
         end
-        task.wait(0.2)
-        for _, pet in pairs(petsFolder:FindFirstChild("Unique"):GetChildren()) do
-            game:GetService("ReplicatedStorage").rEvents.equipPetEvent:FireServer("equipPet", pet)
+    end)
+    task.wait(0.4)
+
+    -- Equip up to 8
+    local equipped = 0
+    for _, pet in pairs(LocalPlayer.petsFolder.Unique:GetChildren()) do
+        if pet.Name == petName and equipped < 8 then
+            ReplicatedStorage.rEvents.equipPetEvent:FireServer("equipPet", pet)
+            equipped += 1
+            task.wait(0.12)
+        end
+    end
+end)
+
+petDropdown:Add("Wild Wizard")
+petDropdown:Add("Mighty Monster")
+
+--// Auto Good / Bad Karma (using touch + event backup)
+local function karmaLoop(isGood)
+    task.spawn(function()
+        while (isGood and autoGoodKarma) or (not isGood and autoBadKarma) do
+            local char = LocalPlayer.Character
+            if char then
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= LocalPlayer then
+                        local evil = plr:FindFirstChild("evilKarma")
+                        local good = plr:FindFirstChild("goodKarma")
+                        if evil and good then
+                            local condition = isGood and (evil.Value > good.Value) or (good.Value > evil.Value)
+                            if condition then
+                                local root = plr.Character and plr.Character:FindFirstChild("HumanoidRootPart")
+                                if root then
+                                    -- Try touch + direct event
+                                    local rh = char:FindFirstChild("RightHand")
+                                    local lh = char:FindFirstChild("LeftHand")
+                                    if rh and lh then
+                                        firetouchinterest(rh, root, 0)
+                                        firetouchinterest(lh, root, 0)
+                                    end
+                                    muscleEvent:FireServer("punch", "rightHand")
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            task.wait(0.03)
         end
     end)
 end
 
--- Karma: Toggle Auto Good Karma
-local autoGoodKarmaEnabled = false
-local function toggleAutoGoodKarma()
-    autoGoodKarmaEnabled = not autoGoodKarmaEnabled
-    if autoGoodKarmaEnabled then
-        task.spawn(function()
-            while autoGoodKarmaEnabled do
-                -- your existing automation code here
-                -- (skipping for brevity, reusing your previous logic)
-                task.wait(0.01)
+local autoGoodKarma, autoBadKarma = false, false
+
+Killer:AddSwitch("Auto Good Karma", function(state)
+    autoGoodKarma = state
+    if state then karmaLoop(true) end
+end)
+
+Killer:AddSwitch("Auto Bad Karma", function(state)
+    autoBadKarma = state
+    if state then karmaLoop(false) end
+end)
+
+--// Whitelist
+Killer:AddSwitch("Auto Whitelist Friends", function(state)
+    if state then
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and LocalPlayer:IsFriendsWith(plr.UserId) then
+                playerWhitelist[plr.Name] = true
             end
-        end)
+        end
+    else
+        playerWhitelist = {}
     end
-end
-local btnAutoGoodKarma = createFeatureButton(karmaSection, "Toggle Auto Good Karma")
-btnAutoGoodKarma.MouseButton1Click:Connect(toggleAutoGoodKarma)
+end)
 
--- Auto Bad Karma
-local autoBadKarmaEnabled = false
-local function toggleAutoBadKarma()
-    autoBadKarmaEnabled = not autoBadKarmaEnabled
-    if autoBadKarmaEnabled then
-        task.spawn(function()
-            while autoBadKarmaEnabled do
-                -- your existing auto bad karma code
-                task.wait(0.01)
+Killer:AddTextBox("Whitelist Player", function(txt)
+    local plr = Players:FindFirstChild(txt)
+    if plr then playerWhitelist[plr.Name] = true end
+end)
+
+Killer:AddTextBox("Unwhitelist Player", function(txt)
+    playerWhitelist[txt] = nil
+end)
+
+--// Auto Kill All (except whitelisted)
+Killer:AddSwitch("Auto Kill All", function(state)
+    task.spawn(function()
+        while state do
+            local char = LocalPlayer.Character
+            if char then
+                for _, plr in ipairs(Players:GetPlayers()) do
+                    if plr ~= LocalPlayer and not playerWhitelist[plr.Name] and plr.Character then
+                        local root = plr.Character:FindFirstChild("HumanoidRootPart")
+                        if root then
+                            muscleEvent:FireServer("punch", "rightHand")
+                            muscleEvent:FireServer("punch", "leftHand")
+                        end
+                    end
+                end
             end
-        end)
-    end
-end
-local btnAutoBadKarma = createFeatureButton(karmaSection, "Toggle Auto Bad Karma")
-btnAutoBadKarma.MouseButton1Click:Connect(toggleAutoBadKarma)
-
--- Whitelist Friends
-local function toggleWhitelistFriends()
-    -- Your existing logic here
-end
-local btnWhitelistFriends = createFeatureButton(karmaSection, "Toggle Whitelist Friends")
-btnWhitelistFriends.MouseButton1Click:Connect(toggleWhitelistFriends)
-
--- Whitelist Player by name
-local function createWhitelistPlayerButton(label, callback)
-    local btn = createFeatureButton(karmaSection, label)
-    btn.MouseButton1Click:Connect(function()
-        -- get name from input box
-        -- (assuming you add input box handling here)
-        -- callback(name)
+            task.wait(0.02)
+        end
     end)
-    return btn
-end
+end)
 
--- Kill System: Auto Kill toggle
-local autoKill = false
-local function toggleAutoKill()
-    autoKill = not autoKill
-    if autoKill then
-        task.spawn(function()
-            while autoKill do
-                -- your kill code here
-                task.wait(0.05)
-            end
-        end)
+--// Target Kill
+local targetDropdown = Killer:AddDropdown("Add Kill Target", function(displayName)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.DisplayName == displayName and not table.find(targetPlayerNames, plr.Name) then
+            table.insert(targetPlayerNames, plr.Name)
+            break
+        end
     end
-end
-local btnAutoKill = createFeatureButton(killSection, "Toggle Auto Kill")
-btnAutoKill.MouseButton1Click:Connect(toggleAutoKill)
+end)
 
--- View Player (Follow) toggle
-local following = false
-local function toggleFollow()
-    following = not following
-end
-local btnFollow = createFeatureButton(followSection, "Toggle Follow")
-btnFollow.MouseButton1Click:Connect(toggleFollow)
+Killer:AddButton("Clear All Targets", function()
+    targetPlayerNames = {}
+end)
 
--- Stop Following
-local function stopFollowing()
+-- Populate dropdown
+for _, plr in ipairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then targetDropdown:Add(plr.DisplayName) end
+end
+
+Players.PlayerAdded:Connect(function(plr)
+    if plr ~= LocalPlayer then targetDropdown:Add(plr.DisplayName) end
+end)
+
+Killer:AddSwitch("Kill Selected Targets", function(state)
+    task.spawn(function()
+        while state do
+            local char = LocalPlayer.Character
+            if char and #targetPlayerNames > 0 then
+                for _, name in ipairs(targetPlayerNames) do
+                    local plr = Players:FindFirstChild(name)
+                    if plr and plr.Character then
+                        local root = plr.Character:FindFirstChild("HumanoidRootPart")
+                        if root then
+                            muscleEvent:FireServer("punch", "rightHand")
+                            muscleEvent:FireServer("punch", "leftHand")
+                        end
+                    end
+                end
+            end
+            task.wait(0.02)
+        end
+    end)
+end)
+
+--// Auto Punch - No Animation (Best Method 2026)
+Killer:AddSwitch("Auto Punch [No Animation - OP]", function(state)
+    task.spawn(function()
+        while state do
+            local punch = LocalPlayer.Backpack:FindFirstChild("Punch") or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Punch"))
+            if punch then
+                if punch.Parent ~= LocalPlayer.Character then
+                    punch.Parent = LocalPlayer.Character
+                end
+                if punch:FindFirstChild("attackTime") then
+                    punch.attackTime.Value = 0
+                end
+                muscleEvent:FireServer("punch", "rightHand")
+                muscleEvent:FireServer("punch", "leftHand")
+            end
+            task.wait(0.008)  -- very fast but stable
+        end
+    end)
+end)
+
+--// Auto Equip Punch
+Killer:AddSwitch("Auto Equip Punch", function(state)
+    task.spawn(function()
+        while state do
+            local punch = LocalPlayer.Backpack:FindFirstChild("Punch")
+            if punch then punch.Parent = LocalPlayer.Character end
+            task.wait(0.2)
+        end
+    end)
+end)
+
+--// Remove Punch Animation
+Killer:AddButton("Remove Punch Animation", function()
+    local blockedIds = {["rbxassetid://3638729053"] = true, ["rbxassetid://3638767427"] = true}
+    
+    local function block(char)
+        local hum = char:FindFirstChild("Humanoid")
+        if hum then
+            for _, track in pairs(hum:GetPlayingAnimationTracks()) do
+                if track.Animation and (blockedIds[track.Animation.AnimationId] or track.Name:lower():find("punch")) then
+                    track:Stop()
+                end
+            end
+            hum.AnimationPlayed:Connect(function(track)
+                task.defer(function()
+                    if track.Animation and (blockedIds[track.Animation.AnimationId] or track.Name:lower():find("punch")) then
+                        track:Stop()
+                    end
+                end)
+            end)
+        end
+    end
+
+    if LocalPlayer.Character then block(LocalPlayer.Character) end
+    LocalPlayer.CharacterAdded:Connect(block)
+end)
+
+--// Auto Slams
+Killer:AddSwitch("Auto Ground Slams", function(state)
+    task.spawn(function()
+        while state do
+            local slam = LocalPlayer.Backpack:FindFirstChild("Ground Slam") or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Ground Slam"))
+            if slam then
+                if slam.Parent == LocalPlayer.Backpack then slam.Parent = LocalPlayer.Character end
+                if slam:FindFirstChild("attackTime") then slam.attackTime.Value = 0 end
+                muscleEvent:FireServer("slam")
+                slam:Activate()
+            end
+            task.wait(0.1)
+        end
+    end)
+end)
+
+--// Good Mode (Brawl)
+Killer:AddSwitch("Good Mode (Brawl Loop)", function(state)
+    task.spawn(function()
+        while state do
+            ReplicatedStorage.rEvents.brawlEvent:FireServer("joinBrawl")
+            task.wait(1)
+        end
+    end)
+end)
+
+--// Combo NaN
+Killer:AddButton("Combo NaN (Size Glitch)", function()
+    ReplicatedStorage.rEvents.changeSpeedSizeRemote:InvokeServer("changeSize", 0/0)
+end)
+
+--// Follow / TP Behind
+local followDropdown = Killer:AddDropdown("Follow / TP Behind Player", function(displayName)
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr.DisplayName == displayName then
+            followTarget = plr.Name
+            following = true
+            break
+        end
+    end
+end)
+
+for _, plr in ipairs(Players:GetPlayers()) do
+    if plr ~= LocalPlayer then followDropdown:Add(plr.DisplayName) end
+end
+
+Killer:AddButton("Stop Following", function()
     following = false
-end
-local btnStopFollow = createFeatureButton(followSection, "Stop Following")
-btnStopFollow.MouseButton1Click:Connect(stopFollowing)
+    followTarget = nil
+end)
 
--- Lighting Time change buttons
-local function createLightingButton(label, selection)
-    local btn = createFeatureButton(timeSection, label)
-    btn.MouseButton1Click:Connect(function()
-        -- Set lighting based on selection
-        -- your existing setLighting code
-    end)
-end
+task.spawn(function()
+    while task.wait(0.03) do
+        if following and followTarget then
+            local target = Players:FindFirstChild(followTarget)
+            local myChar = LocalPlayer.Character
+            local tChar = target and target.Character
+            if myChar and tChar then
+                local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+                local tRoot = tChar:FindFirstChild("HumanoidRootPart")
+                if myRoot and tRoot then
+                    local pos = tRoot.Position - (tRoot.CFrame.LookVector * 4)
+                    myRoot.CFrame = CFrame.new(pos, tRoot.Position)
+                end
+            end
+        end
+    end
+end)
 
--- Add buttons for lighting options
-local lightingOptions = {
-    "Morning",
-    "Noon",
-    "Afternoon",
-    "Sunset",
-    "Night",
-    "Midnight",
-    "Dawn",
-    "Early Morning"
-}
-for _, option in ipairs(lightingOptions) do
-    createLightingButton(option, option)
-end
+--// Time Changer
+local times = {"Morning","Noon","Afternoon","Sunset","Night","Midnight","Dawn","Early Morning"}
+local timeDrop = Killer:AddDropdown("Change Time", function(sel)
+    Lighting.Brightness = 2
+    Lighting.FogEnd = 100000
+    if sel == "Morning" then Lighting.ClockTime = 6 Lighting.Ambient = Color3.fromRGB(200,200,255)
+    elseif sel == "Noon" then Lighting.ClockTime = 12 Lighting.Brightness = 3 Lighting.Ambient = Color3.fromRGB(255,255,255)
+    elseif sel == "Afternoon" then Lighting.ClockTime = 16 Lighting.Ambient = Color3.fromRGB(255,220,180)
+    elseif sel == "Sunset" then Lighting.ClockTime = 18 Lighting.Ambient = Color3.fromRGB(255,150,100) Lighting.FogEnd = 500
+    elseif sel == "Night" then Lighting.ClockTime = 20 Lighting.Brightness = 1.5 Lighting.Ambient = Color3.fromRGB(100,100,150)
+    elseif sel == "Midnight" then Lighting.ClockTime = 0 Lighting.Brightness = 1 Lighting.Ambient = Color3.fromRGB(50,50,100)
+    elseif sel == "Dawn" then Lighting.ClockTime = 4 Lighting.Ambient = Color3.fromRGB(180,180,220)
+    elseif sel == "Early Morning" then Lighting.ClockTime = 2 Lighting.Brightness = 1.2 Lighting.Ambient = Color3.fromRGB(100,120,180)
+    end
+end)
 
--- **Note:** You should implement the actual toggle logic for each button based on your existing code.
--- The above is a template showing how to add buttons for each feature.
+for _, t in ipairs(times) do timeDrop:Add(t) end
 
----
-
-## Summary:
-- I added **buttons** for **each feature**:
-  - Pets equip
-  - Auto Good Karma toggle
-  - Auto Bad Karma toggle
-  - Whitelist friends toggle
-  - Auto Kill toggle
-  - Follow toggle and stop following
-  - Lighting options
-
----
-
-Would you like me to prepare the **full, ready-to-copy** script with all buttons fully implemented?
+print("✅ Muscle Legends Kill Tab Fixed & Loaded!")
