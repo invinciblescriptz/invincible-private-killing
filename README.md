@@ -356,11 +356,11 @@ end)
 
 local killmethodTab = window:AddTab("kill method")
 
-killmethodTab:AddSwitch("Fast Punch", function(s)
+local function toggleFastPunch(s)
     states.FastPunch = s
     if s then
         task.spawn(function()
-            while states.FastPunch and getgenv().NexusRunning do
+            while states.FastPunch do
                 pcall(function()
                     if muscleEvent then
                         muscleEvent:FireServer("punch", "rightHand")
@@ -370,6 +370,7 @@ killmethodTab:AddSwitch("Fast Punch", function(s)
                     if char then
                         local punch = char:FindFirstChild("Punch") or LocalPlayer.Backpack:FindFirstChild("Punch")
                         if punch and punch.Parent ~= char then
+                            -- Equip the punch tool
                             char.Humanoid:EquipTool(punch)
                         end
                         if punch and punch.Parent == char then
@@ -379,11 +380,14 @@ killmethodTab:AddSwitch("Fast Punch", function(s)
                         end
                     end
                 end)
-                task.wait(0.085)
+                task.wait(0.085) -- Adjust delay for better performance
             end
         end)
     end
-end)
+end
+
+-- Replace your existing toggle function with this
+killmethodTab:AddSwitch("Fast Punch", toggleFastPunch)
 
 local Lighting = game:GetService("Lighting")
 
@@ -398,6 +402,36 @@ local timeOptions = {
     "Dawn",
     "Early Morning"
 }
+
+killmethodTab:AddButton("nan kill", function()
+    local args = {"changeSize", 0/0}
+    game:GetService("ReplicatedStorage"):WaitForChild("rEvents"):WaitForChild("changeSpeedSizeRemote"):InvokeServer(unpack(args))
+end)
+
+-- Auto Slam
+local autoSlamActive = false
+killmethodTab:AddSwitch("auto slams", function(state)
+    autoSlamActive = state
+    if state then
+        task.spawn(function()
+            while autoSlamActive do
+                local player = LocalPlayer
+                local groundSlam = player.Backpack:FindFirstChild("Ground Slam") or (player.Character and player.Character:FindFirstChild("Ground Slam"))
+                if groundSlam then
+                    if groundSlam.Parent == player.Backpack then
+                        groundSlam.Parent = player.Character
+                    end
+                    if groundSlam:FindFirstChild("attackTime") then
+                        groundSlam.attackTime.Value = 0
+                    end
+                    player.muscleEvent:FireServer("slam")
+                    groundSlam:Activate()
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
 
 -- Dropdown
 local timeDropdown = killmethodTab:AddDropdown("change time", function(selection)
