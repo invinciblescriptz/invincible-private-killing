@@ -1,40 +1,55 @@
 -- Load the external ScriptLibrary
-local ScriptLibrary = loadstring(game:HttpGet("[https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X](https://raw.githubusercontent.com/Footagesus/WindUI/refs/heads/main/main.client.lua)", true))()
+local url = "https://raw.githubusercontent.com/p4020854-hub/Lb/refs/heads/main/X"
+local success, ScriptLibrary = pcall(function()
+    return loadstring(game:HttpGet(url, true))
+end)
+
+if not success or not ScriptLibrary then
+    warn("Failed to load ScriptLibrary from URL.")
+    return
+end
+
+print("ScriptLibrary loaded successfully.")
 
 -- Create the main window
-local MainWindow = ScriptLibrary:AddWindow(string.format("invincible private killing || Hello %s", game.Players.LocalPlayer.DisplayName), {
+local MainWindow = ScriptLibrary:AddWindow("invincible private killing || Hello " .. game.Players.LocalPlayer.DisplayName, {
     ["min_size"] = Vector2.new(470, 660),
     ["can_resize"] = true,
     ["main_color"] = Color3.fromRGB(0, 10, 0)
 })
 
+if not MainWindow then
+    warn("Failed to create MainWindow.")
+    return
+end
+
+print("MainWindow created successfully.")
+
+local KillerTab = MainWindow:AddTab("Kill")
+local toolsFolder = KillerTab:AddFolder("Tools")
+
+-- Initialize variables
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local window = MainWindow
-
--- Create tabs and folders
-local KillerTab = window:AddTab("Kill")
-local toolsFolder = KillerTab:AddFolder("Tools")
-
--- Initialize variables
-local states = {}
-local AutoGoodKarma, AutoBadKarma, autoKill = false, false, false
-local SelectedTarget = nil
 local playerWhitelist = {}
 local ViewTargetName = nil
 local spying = false
 
--- Helper function to wait for game load
+local AutoGoodKarma, AutoBadKarma, autoKill = false, false, false
+
+-- Helper function to wait until game is loaded
 local function waitForGame()
     if not game:IsLoaded() then
         game.Loaded:Wait()
     end
 end
 waitForGame()
+
+-- --- UI Controls ---
 
 -- Auto Punch (Fast)
 toolsFolder:AddSwitch("Auto Punch (Fast)", function(s)
@@ -236,7 +251,7 @@ KillerTab:AddSwitch("Auto Kill", function(state)
     end)
 end)
 
--- Target dropdown for specific target
+-- Target Player Dropdown for specific targeting
 local targetPlayerNames = {}
 local targetDropdown = KillerTab:AddDropdown("Select Target", function(displayName)
     for _, player in ipairs(Players:GetPlayers()) do
@@ -244,7 +259,7 @@ local targetDropdown = KillerTab:AddDropdown("Select Target", function(displayNa
             if not table.find(targetPlayerNames, player.Name) then
                 table.insert(targetPlayerNames, player.Name)
             end
-            -- Save as selected target
+            -- Save selected target
             SelectedTarget = player.Name
             break
         end
@@ -259,13 +274,15 @@ local function updateTargetDropdown()
         end
     end
     -- Clear previous options
-    targetDropdown:Clear()
-    for _, name in ipairs(options) do
-        targetDropdown:Add(name)
+    if targetDropdown then
+        targetDropdown:Clear()
+        for _, name in ipairs(options) do
+            targetDropdown:Add(name)
+        end
     end
 end
 
--- Refresh player list dynamically
+-- Update dropdown when players join/leave
 Players.PlayerAdded:Connect(function()
     updateTargetDropdown()
 end)
@@ -314,6 +331,10 @@ end)
 
 -- View and follow other players
 local ViewDropdownItems = {}
+local viewDropdown = KillerTab:AddDropdown("Select View Target", function(value)
+    ViewTargetName = value
+end)
+
 local function populateViewDropdown()
     local options = {}
     for _, player in ipairs(Players:GetPlayers()) do
@@ -322,16 +343,13 @@ local function populateViewDropdown()
             table.insert(options, player.DisplayName)
         end
     end
-    -- Clear previous options
-    viewDropdown:Clear()
-    for _, displayName in ipairs(options) do
-        viewDropdown:Add(displayName)
+    if viewDropdown then
+        viewDropdown:Clear()
+        for _, displayName in ipairs(options) do
+            viewDropdown:Add(displayName)
+        end
     end
 end
-
-local viewDropdown = KillerTab:AddDropdown("Select View Target", function(value)
-    ViewTargetName = value
-end)
 
 populateViewDropdown()
 
@@ -353,7 +371,6 @@ Players.PlayerRemoving:Connect(function(player)
     end
 end)
 
--- Follow selected player function
 local function followPlayer(target)
     local myChar = LP.Character
     local targetChar = target.Character
@@ -366,7 +383,7 @@ local function followPlayer(target)
     end
 end
 
-local following = false
+local spying = false
 
 KillerTab:AddSwitch("View Player", function(state)
     spying = state
@@ -428,3 +445,5 @@ KillerTab:AddButton("Remove Punch Anim", function()
         end
     end
 end)
+
+print("Script fully loaded and UI should appear.")
