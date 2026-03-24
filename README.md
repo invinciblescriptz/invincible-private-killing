@@ -60,7 +60,7 @@ local function createButton(text, callback)
     btn.Size = UDim2.new(0, 300, 0, 40)
     btn.Position = UDim2.new(0, 20, 0, yOffset)
     btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red color
+    btn.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red buttons
     btn.TextColor3 = Color3.new(1, 1, 1)
     yOffset = yOffset + 45
     btn.MouseButton1Click:Connect(callback)
@@ -72,7 +72,7 @@ local function createSwitch(text, callback)
     switch.Size = UDim2.new(0, 200, 0, 40)
     switch.Position = UDim2.new(0, 20, 0, yOffset)
     switch.Text = text .. " : OFF"
-    switch.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red color
+    switch.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red switches
     switch.TextColor3 = Color3.new(1, 1, 1)
     yOffset = yOffset + 45
     local state = false
@@ -125,7 +125,7 @@ end
 
 -- ==================== YOUR FEATURES ====================
 
--- 1. Remove Pet selection dropdown (no code needed here)
+-- 1. Remove Pet selection dropdown (do not create it)
 
 -- 2. Auto Good Karma Switch
 local autoGoodKarmaSwitch = createSwitch("Auto Good Karma", function(bool)
@@ -187,62 +187,9 @@ local autoBadKarmaSwitch = createSwitch("Auto Bad Karma", function(bool)
     end)
 end)
 
--- 4. Auto Whitelist Friends toggle
-local playerWhitelist = {}
-local whitelistActive = false
-local whitelistSwitch = createSwitch("Auto Whitelist Friends", function(state)
-    whitelistActive = state
-    if state then
-        for _, player in ipairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer and LocalPlayer:IsFriendsWith(player.UserId) then
-                playerWhitelist[player.Name] = true
-            end
-        end
-        Players.PlayerAdded:Connect(function(player)
-            if whitelistActive and player ~= LocalPlayer and LocalPlayer:IsFriendsWith(player.UserId) then
-                playerWhitelist[player.Name] = true
-            end
-        end)
-    else
-        for name in pairs(playerWhitelist) do
-            local playerObj = Players:FindFirstChild(name)
-            if playerObj and LocalPlayer:IsFriendsWith(playerObj.UserId) then
-                playerWhitelist[name] = nil
-            end
-        end
-    end
-end)
+-- 4. Auto Whitelist Friends toggle (removed)
 
--- 5. Whitelist and UnWhitelist TextBoxes
-local yOffset = yOffset + 10 -- adjust spacing
-local whitelistBox = Instance.new("TextBox", frame)
-whitelistBox.Size = UDim2.new(0, 200, 0, 40)
-whitelistBox.Position = UDim2.new(0, 20, 0, yOffset)
-whitelistBox.PlaceholderText = "Whitelist"
-local function whitelistAdd()
-    local targetName = whitelistBox.Text
-    local targetPlayer = Players:FindFirstChild(targetName)
-    if targetPlayer then
-        playerWhitelist[targetPlayer.Name] = true
-        print("Whitelisted " .. targetPlayer.Name)
-    end
-end
-local whitelistAddBtn = createButton("Whitelist", whitelistAdd)
-
-local yOffset2 = yOffset + 50
-local unWhitelistBox = Instance.new("TextBox", frame)
-unWhitelistBox.Size = UDim2.new(0, 200, 0, 40)
-unWhitelistBox.Position = UDim2.new(0, 20, 0, yOffset2)
-unWhitelistBox.PlaceholderText = "UnWhitelist"
-local function unWhitelist()
-    local targetName = unWhitelistBox.Text
-    local targetPlayer = Players:FindFirstChild(targetName)
-    if targetPlayer then
-        playerWhitelist[targetPlayer.Name] = nil
-        print("Unwhitelisted " .. targetPlayer.Name)
-    end
-end
-local unWhitelistBtn = createButton("UnWhitelist", unWhitelist)
+-- 5. Whitelist and UnWhitelist TextBoxes (removed)
 
 -- 6. Auto Kill toggle
 local autoKillSwitch = createSwitch("Auto Kill", function(bool)
@@ -277,46 +224,7 @@ local autoKillSwitch = createSwitch("Auto Kill", function(bool)
     end)
 end)
 
--- 7. Target selection dropdown
-local targetDropdown = createDropdown("Select Target", function(displayName)
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player.DisplayName == displayName then
-            selectedTarget = player.Name
-        end
-    end
-end)
-
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= LocalPlayer then
-        targetDropdown:Add(player.DisplayName)
-    end
-end
-
-Players.PlayerAdded:Connect(function()
-    targetDropdown:Add(player.DisplayName)
-end)
-Players.PlayerRemoving:Connect(function()
-    targetDropdown:Clear()
-    for _, plr in ipairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer then
-            targetDropdown:Add(plr.DisplayName)
-        end
-    end
-end)
-
-local function removeTarget()
-    if selectedTarget then
-        for i, v in ipairs(targetPlayerNames) do
-            if v == selectedTarget then
-                table.remove(targetPlayerNames, i)
-                break
-            end
-        end
-        selectedTarget = nil
-    end
-end
-
-local removeTargetBtn = createButton("Remove Selected Target", removeTarget)
+-- 7. Remove Target dropdown and related logic (not created anymore)
 
 -- 8. Start Kill Target toggle
 local killTargetSwitch = createSwitch("Start Kill Target", function(state)
@@ -350,7 +258,7 @@ local killTargetSwitch = createSwitch("Start Kill Target", function(state)
     end)
 end)
 
--- 9. View Player / Spy
+-- 9. View Player / Spy (kept)
 local spying = false
 local targetPlayerName = nil
 local spyDropdown = createDropdown("View Player", function(displayName)
@@ -698,8 +606,9 @@ end
 local timeDropdown = createDropdown("change time", function(selection)
     changeTime(selection)
 end)
+
 for _, option in ipairs(times) do
     timeDropdown:Add(option)
 end
 
--- END OF FIXED SCRIPT
+-- END
